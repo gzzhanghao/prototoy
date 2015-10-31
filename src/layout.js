@@ -1,32 +1,24 @@
-import assign from 'object-assign';
-import frame from './frame';
+import virtualize from './VirtualElement';
 
-var rules = [];
+var attrNames = ['top', 'left', 'height', 'width', 'bottom', 'right', 'relative', 'absolute', 'fixed', 'position'];
+var activateAttr = 'layout';
 
-export default function layout(elements, properties) {
-  if (!elements instanceof Array) {
-    elements = [elements];
+export function layout(elems, props) {
+  if (!(elems instanceof Array)) {
+    elems = [elems];
   }
-  rules.push({ elements, properties });
-  elements.forEach(element => assign(element.style, {
-    position: 'absolute',
-    left: 0, top: 0
-  }));
+  virtualize(elems).forEach(element => element.setRule(props));
 }
 
-function evaluate(value, scope, index) {
-  if (typeof value === 'function') {
-    value = value(scope, index);
+export function layoutTree(root) {
+  if (root.hasAttribute(activateAttr)) {
+    var props = {};
+    attrNames.forEach(name => {
+      if (root.hasAttribute(name)) {
+        props[name] = new Function('', 'return ' + root.getAttribute(name));
+      }
+    });
+    layout(root, props);
   }
-  return value;
+  [].slice.call(root.children).forEach(layoutTree);
 }
-
-frame(() =>
-  rules.forEach(rule =>
-    rule.elements.forEach((element, index) => assign(element.style, {
-      transform: `translate(${evaluate(rule.properties.left, element, index)}px, ${evaluate(rule.properties.top, element, index)}px)`,
-      width: `${evaluate(rule.properties.width, element, index)}px`,
-      height: `${evaluate(rule.properties.height, element, index)}px`
-    }))
-  )
-);

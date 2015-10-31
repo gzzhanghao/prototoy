@@ -1,4 +1,4 @@
-import on from './on';
+import {on} from './util';
 import frame from './frame';
 
 var mouse = { pageX: -1, pageY: -1, clientX: -1, clientY: -1, speedX: 0, speedY: 0 };

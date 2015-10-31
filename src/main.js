@@ -1,16 +1,19 @@
-import layout from './layout';
+import {layout} from './layout';
 import mouse from './mouse';
-import {$$} from './query';
-import on from './on';
+import {$$, on} from './util';
 
 var x = 0;
-var y = 0;
+var y = window.innerHeight - 40;
 
 layout($$('.test'), {
-  top: (element, index) => y + index * (30 + y / 2),
-  left: () => 0,
-  width: () => window.innerWidth,
-  height: () => 20 + y / 2
+  top: $ => $.prev().bottom() + 20,
+  left: () => 20,
+  right: () => window.innerWidth - 20,
+  height: () => 20 + Math.max(y / 4, 10)
+});
+
+layout($$('.test.first'), {
+  top: () => 20 + y
 });
 
 var start = [0, 0];
