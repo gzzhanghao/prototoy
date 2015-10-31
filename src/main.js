@@ -6,10 +6,10 @@ var x = 0;
 var y = window.innerHeight - 40;
 
 layout($$('.test'), {
-  top: $ => $.prev().bottom() + 20,
+  top: $ => $.prev().bottom() + Math.max(y / 7 + 20, 20),
   left: () => 20,
   right: () => window.innerWidth - 20,
-  height: () => 20 + Math.max(y / 4, 10)
+  height: () => 40
 });
 
 layout($$('.test.first'), {
