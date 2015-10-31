@@ -3,3 +3,4 @@ export var $ = (selector, context) => (context || document).querySelector(select
 export var $$ = (selector, context) => [].slice.call((context || document).querySelectorAll(selector));
 export var on = (element, event, handler) => element.addEventListener(event, handler);
 export var off = (element, event, handler) => element.removeEventListener(event, handler);
+export var alter = (a, b) => isNull(a) ? b : a;

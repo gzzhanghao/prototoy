@@ -1,5 +1,5 @@
 import assign from 'object-assign';
-import {isNull} from './util';
+import {isNull, alter} from './util';
 import frame from './frame';
 
 var virtElems = [];
@@ -60,28 +60,46 @@ class VirtualElement {
   }
 
   top() {
+    if (!isNull(this.props.top)) {
+      return this.props.top;
+    }
     return this.getBCR().top;
   }
 
   left() {
+    if (!isNull(this.props.left)) {
+      return this.props.left;
+    }
     return this.getBCR().left;
   }
 
   width() {
+    if (!isNull(this.props.width)) {
+      return this.props.width;
+    }
     var bcr = this.getBCR();
     return bcr.right - bcr.left;
   }
 
   height() {
+    if (!isNull(this.props.height)) {
+      return this.props.height;
+    }
     var bcr = this.getBCR();
     return bcr.bottom - bcr.top;
   }
 
   bottom() {
+    if (!isNull(this.props.bottom)) {
+      return this.props.bottom;
+    }
     return this.getBCR().bottom;
   }
 
   right() {
+    if (!isNull(this.props.right)) {
+      return this.props.right;
+    }
     return this.getBCR().right;
   }
 
@@ -107,11 +125,13 @@ class VirtualElement {
       rect[prop] = evaluate(self.rules[prop], self)
     );
     rect = {
-      width: isNull(rect.width) ? rect.right - rect.left : rect.width,
-      left: isNull(rect.left) ? rect.right - rect.width : rect.left,
-      height: isNull(rect.height) ? rect.bottom - rect.top : rect.height,
-      top: isNull(rect.top) ? rect.bottom - rect.height : rect.top
+      width: alter(rect.width, rect.right - rect.left),
+      left: alter(rect.left, rect.right - rect.width),
+      height: alter(rect.height, rect.bottom - rect.top),
+      top: alter(rect.top, rect.bottom - rect.height)
     };
+    self.props.bottom = rect.top + rect.height;
+    self.props.right = rect.left + rect.right;
     ['width', 'left', 'height', 'top'].forEach(prop => {
       if (self.props[prop] !== rect[prop]) {
         self.props[prop] = rect[prop];
