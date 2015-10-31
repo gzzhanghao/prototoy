@@ -18,12 +18,10 @@ layout($$('.test.first'), {
 
 var start = [0, 0];
 var touchEvent = null;
-var console = $$('.console')[0];
 
 on(window, 'touchstart', event => {
   start = [x, y];
   touchEvent = { pageX: event.touches[0].pageX, pageY: event.touches[0].pageY };
-  console.innerHTML = `start ${JSON.stringify(touchEvent)}`;
 });
 on(window, 'touchmove', event => {
   if (!touchEvent) {
@@ -31,7 +29,6 @@ on(window, 'touchmove', event => {
   }
   x = start[0] + event.touches[0].pageX - touchEvent.pageX;
   y = start[1] + event.touches[0].pageY - touchEvent.pageY;
-  console.innerHTML = `move ${x} ${y}`;
 });
 on(window, 'touchend', () => touchEvent = null);
 on(window, 'mousedown', event => {
