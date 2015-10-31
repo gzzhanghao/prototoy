@@ -1,6 +1,7 @@
 import {layout} from './layout';
 import mouse from './mouse';
 import {$$, on} from './util';
+import frame from './frame';
 
 var x = 0;
 var y = window.innerHeight - 40;
@@ -17,34 +18,26 @@ layout($$('.test.first'), {
 });
 
 var start = [0, 0];
+var speed = [0, 0];
 var touchEvent = null;
 
 on(window, 'touchstart', event => {
+  event.preventDefault();
   start = [x, y];
   touchEvent = { pageX: event.touches[0].pageX, pageY: event.touches[0].pageY };
 });
 on(window, 'touchmove', event => {
-  if (!touchEvent) {
-    return;
-  }
+  event.preventDefault();
   x = start[0] + event.touches[0].pageX - touchEvent.pageX;
   y = start[1] + event.touches[0].pageY - touchEvent.pageY;
 });
-on(window, 'touchend', () => touchEvent = null);
-on(window, 'mousedown', event => {
-  start = [x, y];
-  touchEvent = { pageX: event.pageX, pageY: event.pageY };
-});
-on(window, 'mousemove', event => {
-  if (!touchEvent) {
-    return;
-  }
-  x = start[0] + event.pageX - touchEvent.pageX;
-  y = start[1] + event.pageY - touchEvent.pageY;
-});
-on(window, 'mouseup', () => touchEvent = null);
+on(window, 'touchend', () => speed = [mouse.speedX, mouse.speedY]);
+on(window, 'error', event => document.write(event.stack));
 
-on(window, 'mousedown', event => event.preventDefault());
-on(window, 'touchstart', event => event.preventDefault());
-on(window, 'touchmove', event => event.preventDefault());
-on(window, 'error', event => document.write(event.message));
+var friction = 0.9;
+
+frame(() => {
+  x += speed[0];
+  y += speed[1];
+  speed = speed.map(v => v * friction);
+});
