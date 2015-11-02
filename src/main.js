@@ -2,13 +2,13 @@ import {parse, layout} from './layout';
 import mouse from './mouse';
 import {$$, on} from './util';
 import frame from './frame';
-import scroll from './scroll';
+import $window from './window';
 
-window.scroll = scroll;
+window.$window = $window;
 
 layout($$('.test'), {
-  top: $ => $.prev().bottom() + Math.max(scroll.y / 7 + 20, 20),
+  top: $ => $.prev().bottom() + 20,
   left: () => 20,
-  right: () => window.innerWidth - 20,
+  right: () => $window.width - 20,
   height: () => 40
 });
