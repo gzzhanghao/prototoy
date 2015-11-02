@@ -1,24 +1,24 @@
 import virtualize from './VirtualElement';
 
-var attrNames = ['top', 'left', 'height', 'width', 'bottom', 'right', 'relative', 'absolute', 'fixed', 'position'];
+var attrNames = ['top', 'left', 'height', 'width', 'bottom', 'right', 'position'];
 var activateAttr = 'layout';
 
-export function layout(elems, props) {
-  if (!(elems instanceof Array)) {
-    elems = [elems];
+export function layout(elements, props) {
+  if (!(elements instanceof Array)) {
+    elements = [elements];
   }
-  virtualize(elems).forEach(element => element.setRule(props));
+  virtualize(elements).forEach(element => element.setRule(props, 1));
 }
 
-export function layoutTree(root) {
-  if (root.hasAttribute(activateAttr)) {
-    var props = {};
-    attrNames.forEach(name => {
-      if (root.hasAttribute(name)) {
-        props[name] = new Function('', 'return ' + root.getAttribute(name));
-      }
-    });
-    layout(root, props);
-  }
-  [].slice.call(root.children).forEach(layoutTree);
+export function parse(element) {
+  var props = {};
+  attrNames.forEach(name => {
+    if (element.hasAttribute(name)) {
+      props[name] = new Function('', 'return ' + element.getAttribute(name));
+    }
+  });
+  virtualize(element).setRule(props, 2);
+  [].slice.call(element.children).forEach(parse);
 }
+
+parse(document.body);

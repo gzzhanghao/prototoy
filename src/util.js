@@ -1,6 +1,7 @@
-export var isNull = value => value === null || typeof value === 'undefined';
+export var isEmpty = value => value === null || typeof value === 'undefined' || Number.isNaN(value);
 export var $ = (selector, context) => (context || document).querySelector(selector);
 export var $$ = (selector, context) => [].slice.call((context || document).querySelectorAll(selector));
 export var on = (element, event, handler) => element.addEventListener(event, handler);
 export var off = (element, event, handler) => element.removeEventListener(event, handler);
-export var alter = (a, b) => isNull(a) ? b : a;
+export var alter = (a, b) => isEmpty(a) ? b : a;
+export var has = (host, key) => host.hasOwnProperty(key);

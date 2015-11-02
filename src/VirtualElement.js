@@ -1,31 +1,39 @@
 import assign from 'object-assign';
-import {isNull, alter} from './util';
+import {isEmpty, alter, has} from './util';
 import frame from './frame';
 
-var virtElems = [];
 var symVirt = Symbol('v-element');
+var virtElems = [];
+var stateVersion = 0;
 
 class VirtualElement {
 
   constructor(element) {
     assign(this, {
-      element,
+      element: element,
       style: element.style,
-      props: {},
-      rules: {},
-      bcr: null
+      parentNode: element.parentNode,
+      stateVersion: null,
+      state: {},
+      prevState: {},
+      priority: { position: 0 },
+      rules: { position: 'fixed' }
     });
-    this.position('fixed');
+    this.style.top = this.style.left = 0;
   }
 
   appendTo(parent) {
-    parent.appendChild(this.element);
+    (this.parentNode = parent).appendChild(this.element);
     return this;
   }
 
   insertBefore(sibling) {
-    sibling.parentNode.insertBefore(this.element, sibling);
+    (this.parentNode = sibling.parentNode).insertBefore(this.element, sibling);
     return this;
+  }
+
+  attr(key) {
+    return this.element.getAttribute(key);
   }
 
   prev() {
@@ -36,129 +44,197 @@ class VirtualElement {
     return virtualize(this.element.nextElementSibling);
   }
 
-  parent() {
-    return virtualize(this.element.parentNode);
+  parent(selector) {
+    if (!selector) {
+      return virtualize(this.parentNode);
+    }
+    var suspects = [].slice.call(document.querySelectorAll(selector));
+    var parent = this.parentNode;
+    while(parent && suspects.indexOf(parent) < 0) {
+      parent = parent.parentNode;
+    }
+    return virtualize(parent);
   }
 
   children() {
     return virtualize([].slice.call(this.element.children));
   }
 
-  position(value) {
-    if (isNull(value)) {
-      return this.style.position;
-    }
-    this.style.position = value;
+  find(selector) {
+    return virtualize(this.element.querySelector(selector));
+  }
+
+  findAll(selector) {
+    return virtualize([].slice.call(this.element.querySelector(selector)));
+  }
+
+  setRule(rules, priority) {
+    priority = priority | 0;
+    Object.keys(rules).forEach(name => {
+      if (has(this.priority, name) && this.priority[name] > priority) {
+        return;
+      }
+      this.rules[name] = rules[name];
+      this.priority[name] = priority;
+    });
     return this;
   }
 
   getBCR() {
-    if (!this.bcr) {
+    if (!has(this, 'bcr')) {
       this.bcr = this.element.getBoundingClientRect();
     }
     return this.bcr;
   }
 
+  position() {
+    return this.getValue('position');
+  }
+
   top() {
-    if (!isNull(this.props.top)) {
-      return this.props.top;
+    this.checkStateVersion();
+    if (has(this.state, 'top')) {
+      return this.state.top;
     }
-    return this.getBCR().top;
+    var value = 0;
+    if (has(this.rules, 'top')) {
+      value = this.getValue('top');
+    } else if (has(this.rules, 'bottom') && has(this.rules, 'height')) {
+      value = this.getValue('bottom') - this.getValue('height');
+    }
+    return this.state.top = value | 0;
   }
 
   left() {
-    if (!isNull(this.props.left)) {
-      return this.props.left;
+    if (has(this.state, 'left')) {
+      return this.state.left;
     }
-    return this.getBCR().left;
+    var value = 0;
+    if (has(this.rules, 'left')) {
+      value = this.getValue('left');
+    } else if (has(this.rules, 'right') && has(this.rules, 'width')) {
+      value = this.getValue('right') - this.getValue('width');
+    }
+    return this.state.left = value | 0;
   }
 
   width() {
-    if (!isNull(this.props.width)) {
-      return this.props.width;
+    if (has(this.state, 'width')) {
+      return this.state.width;
     }
-    var bcr = this.getBCR();
-    return bcr.right - bcr.left;
+    var value;
+    if (has(this.rules, 'width')) {
+      value = this.getValue('width');
+    } else if (has(this.rules, 'right') && has(this.rules, 'left')) {
+      value = this.getValue('right') - this.getValue('left');
+    } else {
+      var bcr = this.getBCR();
+      value = bcr.right - bcr.left;
+    }
+    return this.state.width = value | 0;
   }
 
   height() {
-    if (!isNull(this.props.height)) {
-      return this.props.height;
+    if (has(this.state, 'height')) {
+      return this.state.height;
     }
-    var bcr = this.getBCR();
-    return bcr.bottom - bcr.top;
+    var value;
+    if (has(this.rules, 'height')) {
+      value = this.getValue('height');
+    } else if (has(this.rules, 'bottom') && has(this.rules, 'top')) {
+      value = this.getValue('bottom') - this.getValue('top');
+    } else {
+      var bcr = this.getBCR();
+      value = bcr.bottom - bcr.top;
+    }
+    return this.state.height = value | 0;
   }
 
   bottom() {
-    if (!isNull(this.props.bottom)) {
-      return this.props.bottom;
+    if (has(this.state, 'bottom')) {
+      return this.state.bottom;
     }
-    return this.getBCR().bottom;
+    var value;
+    if (has(this.rules, 'bottom')) {
+      value = this.getValue('bottom');
+    } else {
+      value = this.top() + this.height();
+    }
+    return this.state.bottom = value | 0;
   }
 
   right() {
-    if (!isNull(this.props.right)) {
-      return this.props.right;
+    if (has(this.state, 'right')) {
+      return this.state.right;
     }
-    return this.getBCR().right;
-  }
-
-  setRule(rules) {
-    assign(this.rules, rules);
+    var value;
+    if (has(this.rules, 'right')) {
+      value = this.getValue('right');
+    } else {
+      value = this.left() + this.width();
+    }
+    return this.state.right = value | 0;
   }
 
   update() {
-    var self = this;
-    // position
-    if (!isNull(self.rules.relative)) {
-      self.position('relative');
-    } else if (!isNull(self.rules.absolute)) {
-      self.position('absolute');
-    } else if (!isNull(self.rules.fixed)) {
-      self.position('fixed');
-    } else if (!isNull(self.rules.position)) {
-      self.position(evaluate(self.rules.position, self));
+    var prevState = this.prevState;
+    var left = this.left;
+    var top = this.top;
+    if (left !== prevState.left || top !== prevState.top) {
+      this.style.transform = `translate(${this.left()}px, ${this.top()}px)`;
     }
-    // rect
-    var rect = {};
-    Object.keys(self.rules).forEach(prop =>
-      rect[prop] = evaluate(self.rules[prop], self)
-    );
-    rect = {
-      width: alter(rect.width, rect.right - rect.left),
-      left: alter(rect.left, rect.right - rect.width),
-      height: alter(rect.height, rect.bottom - rect.top),
-      top: alter(rect.top, rect.bottom - rect.height)
-    };
-    self.props.bottom = rect.top + rect.height;
-    self.props.right = rect.left + rect.right;
-    ['width', 'left', 'height', 'top'].forEach(prop => {
-      if (self.props[prop] !== rect[prop]) {
-        self.props[prop] = rect[prop];
-        self.style[prop] = rect[prop] + 'px';
-        self.bcr = null;
-      }
-    });
+    var width = this.width();
+    if (width !== prevState.width) {
+      this.style.width = `${width}px`;
+    }
+    var height = this.height();
+    if (height !== prevState.height) {
+      this.style.height = `${height}px`;
+    }
+    var position = this.position();
+    if (position !== prevState.position) {
+      this.style.position = position;
+    }
   }
-}
 
-function evaluate(value, context, index) {
-  if (typeof value === 'function') {
-    value = value.call(context, context, index);
+  checkStateVersion() {
+    if (this.stateVersion === stateVersion) {
+      return;
+    }
+    this.prevState = {};
+    this.state = {};
+    this.stateVersion = stateVersion;
   }
-  return value;
+
+  getValue(name) {
+    if (has(this.state, name)) {
+      return this.state[name];
+    }
+    var value = this.rules[name];
+    if (typeof value === 'function') {
+      value = value.call(this, this);
+    }
+    return value;
+  }
 }
 
 function virtualize(element) {
+  if (!element) {
+    return null;
+  }
   if (element instanceof Array) {
     return element.map(virtualize);
   }
-  if (!element.hasOwnProperty(symVirt)) {
+  if (!has(element, symVirt)) {
     virtElems.push(element[symVirt] = new VirtualElement(element));
   }
+  [].slice.call(element.children).forEach(virtualize);
   return element[symVirt];
 }
 
-frame(() => virtElems.forEach(element => element.update()));
+frame(() => {
+  stateVersion = (stateVersion + 1) % 1024;
+  virtElems.forEach(element => element.update());
+});
 
 export default virtualize;

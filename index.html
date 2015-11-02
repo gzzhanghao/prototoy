@@ -6,13 +6,16 @@
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
   <script src="/webpack-dev-server.js"></script>
   <style>
+    body {
+      margin: 0;
+    }
     .test {
       background: lightgreen;
     }
   </style>
 </head>
 <body>
-<div class="test first"></div>
+<div class="test" top="window.innerHeight + Math.max(scroll.y - 60, 20 - window.innerHeight)"></div>
 <div class="test"></div>
 <div class="test"></div>
 <div class="test"></div>
