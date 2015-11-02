@@ -118,7 +118,7 @@ class VirtualElement {
     return this.state.left = value | 0;
   }
 
-  width() {
+  width(optional) {
     if (has(this.state, 'width')) {
       return this.state.width;
     }
@@ -127,6 +127,8 @@ class VirtualElement {
       value = this.getValue('width');
     } else if (has(this.rules, 'right') && has(this.rules, 'left')) {
       value = this.getValue('right') - this.getValue('left');
+    } else if (optional) {
+      return null;
     } else {
       var bcr = this.getBCR();
       value = bcr.right - bcr.left;
@@ -134,7 +136,7 @@ class VirtualElement {
     return this.state.width = value | 0;
   }
 
-  height() {
+  height(optional) {
     if (has(this.state, 'height')) {
       return this.state.height;
     }
@@ -143,6 +145,8 @@ class VirtualElement {
       value = this.getValue('height');
     } else if (has(this.rules, 'bottom') && has(this.rules, 'top')) {
       value = this.getValue('bottom') - this.getValue('top');
+    } else if (optional) {
+      return null;
     } else {
       var bcr = this.getBCR();
       value = bcr.bottom - bcr.top;
@@ -183,12 +187,12 @@ class VirtualElement {
     if (left !== prevState.left || top !== prevState.top) {
       this.style.transform = `translate(${this.left()}px, ${this.top()}px)`;
     }
-    var width = this.width();
-    if (width !== prevState.width) {
+    var width = this.width(true);
+    if (width !== null && width !== prevState.width) {
       this.style.width = `${width}px`;
     }
     var height = this.height();
-    if (height !== prevState.height) {
+    if (height !== null && width !== prevState.height) {
       this.style.height = `${height}px`;
     }
     var position = this.position();
