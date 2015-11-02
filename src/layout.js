@@ -1,7 +1,6 @@
 import virtualize from './VirtualElement';
 
 var attrNames = ['top', 'left', 'height', 'width', 'bottom', 'right', 'position'];
-var activateAttr = 'layout';
 
 export function layout(elements, props) {
   if (!(elements instanceof Array)) {
