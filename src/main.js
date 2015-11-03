@@ -7,8 +7,8 @@ import $window from './window';
 window.$window = $window;
 
 layout($$('.test'), {
-  top: $ => $.prev().bottom() + 20,
-  left: () => 20,
-  right: () => $window.width - 20,
+  top: $ => $.prev().bottom() + 40,
+  left: $ => 40 + 20 * Math.sin(Math.PI * 2 * $.top() / $window.height),
+  right: $ => $window.width - 40 + 20 * Math.cos(Math.PI * 2 * $.top() / $window.height),
   height: () => 40
 });

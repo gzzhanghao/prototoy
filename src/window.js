@@ -40,3 +40,4 @@ frame(() => {
   $window.top += speed[1];
   speed = speed.map(v => v * friction);
 });
+

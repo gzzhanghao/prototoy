@@ -19,12 +19,19 @@ on(window, 'touchstart', event => mouseEvent = event.touches[0]);
 on(window, 'touchmove', event => mouseEvent = event.touches[0]);
 on(window, 'touchend', event => mouseEvent = event.touches[0]);
 
+var calcSpeed = null;
+
 frame(() => {
   if (!mouseEvent) {
     mouseEvent = mouse;
   }
-  mouse.speedX = mouseEvent.pageX - mouse.pageX;
-  mouse.speedY = mouseEvent.pageY - mouse.pageY;
+  if (calcSpeed) {
+    mouse.speedX = mouseEvent.pageX - calcSpeed[0];
+    mouse.speedY = mouseEvent.pageY - calcSpeed[1];
+    calcSpeed = null;
+  } else {
+    calcSpeed = [mouse.pageX, mouse.pageY];
+  }
   mouse.pageX = mouseEvent.pageX;
   mouse.pageY = mouseEvent.pageY;
   mouse.clientX = mouseEvent.clientX;
