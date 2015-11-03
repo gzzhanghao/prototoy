@@ -12,3 +12,4 @@ layout($$('.test'), {
   right: $ => $window.width - 40 + 20 * Math.cos(Math.PI * 2 * $.top() / $window.height),
   height: () => 40
 });
+

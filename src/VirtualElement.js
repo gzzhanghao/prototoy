@@ -16,10 +16,9 @@ class VirtualElement {
       stateVersion: null,
       state: {},
       prevState: {},
-      priority: { position: 0 },
-      rules: { position: 'fixed' }
+      priority: {},
+      rules: {}
     });
-    this.style.top = this.style.left = 0;
   }
 
   appendTo(parent) {
@@ -182,16 +181,16 @@ class VirtualElement {
 
   update() {
     var prevState = this.prevState;
-    var left = this.left;
-    var top = this.top;
+    var left = this.left();
+    var top = this.top();
     if (left !== prevState.left || top !== prevState.top) {
-      this.style.transform = `translate(${this.left()}px, ${this.top()}px)`;
+      this.style.transform = `translate(${left}px, ${top}px)`;
     }
     var width = this.width(true);
     if (width !== null && width !== prevState.width) {
       this.style.width = `${width}px`;
     }
-    var height = this.height();
+    var height = this.height(true);
     if (height !== null && width !== prevState.height) {
       this.style.height = `${height}px`;
     }
@@ -205,7 +204,7 @@ class VirtualElement {
     if (this.stateVersion === stateVersion) {
       return;
     }
-    this.prevState = {};
+    this.prevState = this.state;
     this.state = {};
     this.stateVersion = stateVersion;
   }
@@ -242,3 +241,4 @@ frame(() => {
 });
 
 export default virtualize;
+
