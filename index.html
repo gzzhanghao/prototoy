@@ -21,7 +21,7 @@
   </style>
 </head>
 <body>
-<div class="test" [top]="$window.height + $window.top - 60"></div>
+<div class="test" [top]="$window.height + $window.top - 60" [border-radius]="10 * Math.sin(4 * Math.PI * this.top() / $window.height) + 'px'"></div>
 <div class="test"></div>
 <div class="test"></div>
 <div class="test"></div>

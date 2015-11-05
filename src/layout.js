@@ -5,6 +5,7 @@ import assign from 'object-assign';
 
 var PRIORITY_INLINE = 2;
 var watchList = [];
+var ignoreProps = ['width', 'height', 'top', 'left', 'right', 'bottom'];
 var locateProps = ['width', 'height', 'top', 'left'];
 
 function layout (element, rules, priority) {
@@ -28,7 +29,7 @@ function parseElement (element) {
   [].slice.call(element.attributes).forEach(attr => {
     var value = parseAttr(attr.nodeName, attr.value);
     if (null !== value) {
-      rules[attr.nodeName.slice(1, -1)] = value;
+      rules[camelize(attr.nodeName.slice(1, -1))] = value;
     }
   });
   return rules;
@@ -74,13 +75,13 @@ function update (virtual) {
     }
   });
   Object.keys(rules).forEach(name => {
-    if (locateProps.indexOf(name) < 0 && state[name] !== nextState[name]) {
+    if (ignoreProps.indexOf(name) < 0 && state[name] !== nextState[name]) {
       style[name] = virtual.css(name);
       state[name] = nextState[name];
     }
   });
   locateProps.forEach(name => {
-    style[name] = `${virtual[name](true) || ''}px`;
+    style[name] = `${virtual[name](true) | 0}px`;
   });
   Object.keys(nextState).forEach(name => delete nextState[name]);
 }
@@ -94,6 +95,9 @@ function onFrame () {
   watchList.forEach(update);
 }
 
+function camelize(token) {
+  return token.replace(/\-\w/g, match => match.slice(1).toUpperCase());
+}
 
 frame(onFrame);
 export { layout, parse };
