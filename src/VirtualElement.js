@@ -1,38 +1,42 @@
 import assign from 'object-assign';
-import {isEmpty, alter, has} from './util';
+import {isEmpty, has} from './util';
 import frame from './frame';
 
-var symVirt = Symbol('v-element');
-var virtElems = [];
-var stateVersion = 0;
+var numReg = /^\-?\d*\.?\d+$/;
+var symVirtual = Symbol('virtual');
+var units = {
+  top: 'px', right: 'px',
+  bottom: 'px', left: 'px',
+  width: 'px', height: 'px'
+};
 
 class VirtualElement {
 
   constructor(element) {
     assign(this, {
-      element: element,
+      element,
       style: element.style,
-      parentNode: element.parentNode,
-      stateVersion: null,
+      rules: {},
       state: {},
-      prevState: {},
-      priority: {},
-      rules: {}
+      priorities: {},
+      nextState: {}
     });
   }
 
-  appendTo(parent) {
-    (this.parentNode = parent).appendChild(this.element);
-    return this;
+  prop(key) {
+    return this.element[key];
   }
 
-  insertBefore(sibling) {
-    (this.parentNode = sibling.parentNode).insertBefore(this.element, sibling);
-    return this;
+  hasProp(key) {
+    return has(this.element, key);
   }
 
   attr(key) {
     return this.element.getAttribute(key);
+  }
+
+  hasAttr(key) {
+    return this.element.hasAttribute(key);
   }
 
   prev() {
@@ -49,7 +53,7 @@ class VirtualElement {
     }
     var suspects = [].slice.call(document.querySelectorAll(selector));
     var parent = this.parentNode;
-    while(parent && suspects.indexOf(parent) < 0) {
+    while (parent && suspects.indexOf(parent) < 0) {
       parent = parent.parentNode;
     }
     return virtualize(parent);
@@ -67,18 +71,6 @@ class VirtualElement {
     return virtualize([].slice.call(this.element.querySelector(selector)));
   }
 
-  setRule(rules, priority) {
-    priority = priority | 0;
-    Object.keys(rules).forEach(name => {
-      if (has(this.priority, name) && this.priority[name] > priority) {
-        return;
-      }
-      this.rules[name] = rules[name];
-      this.priority[name] = priority;
-    });
-    return this;
-  }
-
   getBCR() {
     if (!has(this, 'bcr')) {
       this.bcr = this.element.getBoundingClientRect();
@@ -86,139 +78,125 @@ class VirtualElement {
     return this.bcr;
   }
 
-  position() {
-    return this.getValue('position');
-  }
-
   top() {
-    this.checkStateVersion();
-    if (has(this.state, 'top')) {
-      return this.state.top;
+    if (has(this.nextState, 'top')) {
+      return this.nextState.top;
     }
     var value = 0;
     if (has(this.rules, 'top')) {
-      value = this.getValue('top');
+      value = this.value('top');
     } else if (has(this.rules, 'bottom') && has(this.rules, 'height')) {
-      value = this.getValue('bottom') - this.getValue('height');
+      value = this.value('bottom') - this.value('height');
+    } else if (has(this.rules, 'bottom')) {
+      value = this.value('bottom') - this.height();
     }
-    return this.state.top = value | 0;
+    return this.nextState.top = value;
   }
 
   left() {
-    if (has(this.state, 'left')) {
-      return this.state.left;
+    if (has(this.nextState, 'left')) {
+      return this.nextState.left;
     }
     var value = 0;
     if (has(this.rules, 'left')) {
-      value = this.getValue('left');
+      value = this.value('left');
     } else if (has(this.rules, 'right') && has(this.rules, 'width')) {
-      value = this.getValue('right') - this.getValue('width');
+      value = this.value('right') - this.value('width');
+    } else if (has(this.rules, 'right')) {
+      value = this.value('right') - this.width();
     }
-    return this.state.left = value | 0;
+    return this.nextState.left = value;
   }
 
   width(optional) {
-    if (has(this.state, 'width')) {
-      return this.state.width;
+    if (has(this.nextState, 'width')) {
+      return this.nextState.width;
     }
-    var value;
+    var value = null;
     if (has(this.rules, 'width')) {
-      value = this.getValue('width');
+      value = this.value('width');
     } else if (has(this.rules, 'right') && has(this.rules, 'left')) {
-      value = this.getValue('right') - this.getValue('left');
-    } else if (optional) {
-      return null;
-    } else {
+      value = this.value('right') - this.value('left');
+    } else if (!optional) {
       var bcr = this.getBCR();
       value = bcr.right - bcr.left;
     }
-    return this.state.width = value | 0;
+    return this.nextState.width = value;
   }
 
   height(optional) {
-    if (has(this.state, 'height')) {
-      return this.state.height;
+    if (has(this.nextState, 'height')) {
+      return this.nextState.height;
     }
-    var value;
+    var value = null;
     if (has(this.rules, 'height')) {
-      value = this.getValue('height');
+      value = this.value('height');
     } else if (has(this.rules, 'bottom') && has(this.rules, 'top')) {
-      value = this.getValue('bottom') - this.getValue('top');
-    } else if (optional) {
-      return null;
-    } else {
+      value = this.value('bottom') - this.value('top');
+    } else if (!optional) {
       var bcr = this.getBCR();
       value = bcr.bottom - bcr.top;
     }
-    return this.state.height = value | 0;
+    return this.nextState.height = value;
   }
 
   bottom() {
-    if (has(this.state, 'bottom')) {
-      return this.state.bottom;
+    if (has(this.nextState, 'bottom')) {
+      return this.nextState.bottom;
     }
     var value;
     if (has(this.rules, 'bottom')) {
-      value = this.getValue('bottom');
+      value = this.value('bottom');
     } else {
       value = this.top() + this.height();
     }
-    return this.state.bottom = value | 0;
+    return this.nextState.bottom = value;
   }
 
   right() {
-    if (has(this.state, 'right')) {
-      return this.state.right;
+    if (has(this.nextState, 'right')) {
+      return this.nextState.right;
     }
     var value;
     if (has(this.rules, 'right')) {
-      value = this.getValue('right');
+      value = this.value('right');
     } else {
       value = this.left() + this.width();
     }
-    return this.state.right = value | 0;
+    return this.nextState.right = value;
   }
 
-  update() {
-    var prevState = this.prevState;
-    var left = this.left();
-    var top = this.top();
-    if (left !== prevState.left || top !== prevState.top) {
-      this.style.transform = `translate(${left}px, ${top}px)`;
+  css(name, real) {
+    if (!real && has(this.rules, name)) {
+      return formatProp(this.value(name), name);
     }
-    var width = this.width(true);
-    if (width !== null && width !== prevState.width) {
-      this.style.width = `${width}px`;
+    var value = this.style[name];
+    if (value) {
+      return value;
     }
-    var height = this.height(true);
-    if (height !== null && width !== prevState.height) {
-      this.style.height = `${height}px`;
-    }
-    var position = this.position();
-    if (position !== prevState.position) {
-      this.style.position = position;
-    }
+    return getComputedStyle(this.element)[name];
   }
 
-  checkStateVersion() {
-    if (this.stateVersion === stateVersion) {
+  value(name) {
+    if (has(this.nextState, name)) {
+      return this.nextState[name];
+    }
+    if (!has(this.rules, name)) {
       return;
-    }
-    this.prevState = this.state;
-    this.state = {};
-    this.stateVersion = stateVersion;
-  }
-
-  getValue(name) {
-    if (has(this.state, name)) {
-      return this.state[name];
     }
     var value = this.rules[name];
     if (typeof value === 'function') {
       value = value.call(this, this);
     }
-    return value;
+    return this.nextState[name] = value;
   }
+}
+
+function formatProp(value, name) {
+  if (has(units, name) && numReg.test(value)) {
+    value = value + units[name];
+  }
+  return value;
 }
 
 function virtualize(element) {
@@ -228,17 +206,13 @@ function virtualize(element) {
   if (element instanceof Array) {
     return element.map(virtualize);
   }
-  if (!has(element, symVirt)) {
-    virtElems.push(element[symVirt] = new VirtualElement(element));
+  if (element instanceof VirtualElement) {
+    return element;
   }
-  [].slice.call(element.children).forEach(virtualize);
-  return element[symVirt];
+  if (!has(element, symVirtual)) {
+    element[symVirtual] = new VirtualElement(element);
+  }
+  return element[symVirtual];
 }
 
-frame(() => {
-  stateVersion = (stateVersion + 1) % 1024;
-  virtElems.forEach(element => element.update());
-});
-
-export default virtualize;
-
+export {VirtualElement, virtualize};

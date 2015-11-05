@@ -1,5 +1,5 @@
-import {on} from './util';
-import frame from './frame';
+import {on} from './../util';
+import frame from './../frame';
 import assign from 'object-assign';
 import EventEmitter from 'events';
 

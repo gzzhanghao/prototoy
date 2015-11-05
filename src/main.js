@@ -1,10 +1,12 @@
 import {parse, layout} from './layout';
-import mouse from './mouse';
+import mouse from './plugins/mouse';
 import {$$, on} from './util';
 import frame from './frame';
-import $window from './window';
+import $window from './plugins/window';
 
 window.$window = $window;
+
+parse(document.body);
 
 layout($$('.test'), {
   top: $ => $.prev().bottom() + 40,
