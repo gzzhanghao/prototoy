@@ -4,9 +4,10 @@ import {has} from './util';
 import assign from 'object-assign';
 
 var PRIORITY_INLINE = 2;
-var watchList = [];
-var ignoreProps = ['width', 'height', 'top', 'left', 'right', 'bottom'];
 var locateProps = ['width', 'height', 'top', 'left'];
+var ignoreProps = ['width', 'height', 'top', 'left', 'right', 'bottom'];
+var watchList = [];
+var transformations = [];
 
 function layout (element, rules, priority) {
   if (element instanceof Array) {
@@ -42,9 +43,18 @@ function parseAttr (name, value) {
     return null;
   }
   if (start === '[') {
-    value = new Function('', `return ${value}`);
+    value = new Function('', `return ${transform(value)}`);
   }
   return value;
+}
+
+function addTransform (transformation) {
+  transformations.push(transformation);
+}
+
+function transform (expression) {
+  transformations.forEach(transformation => expression = transformation(expression));
+  return expression;
 }
 
 function setup (element, rules, priority) {
@@ -100,4 +110,4 @@ function camelize(token) {
 }
 
 frame(onFrame);
-export { layout, parse };
+export { layout, parse, addTransform };
