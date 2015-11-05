@@ -1,6 +1,7 @@
 import assign from 'object-assign';
 import {isEmpty, has} from './util';
 import frame from './frame';
+import {Symbol} from './util';
 
 var numReg = /^\-?\d*\.?\d+$/;
 var symVirtual = Symbol('virtual');
