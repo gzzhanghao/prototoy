@@ -1,6 +1,6 @@
 import assign from 'object-assign';
-import frame from 'frame';
-import {camelize, isArray} from 'util';
+import frame from './frame';
+import {camelize, isArray} from './util';
 import VirtualElement from './VirtualElement';
 
 var PRIOR_SCRIPT = 0;

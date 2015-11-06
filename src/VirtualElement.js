@@ -1,5 +1,5 @@
 import assign from 'object-assign';
-import {Symbol, $, $$, has, addUnit, isFunction} from 'util';
+import {Symbol, $, $$, has, addUnit, isFunction} from './util';
 
 var symVirtual = Symbol('virtual');
 var numericValues = ['top', 'left', 'right', 'bottom', 'width', 'height'];
