@@ -1,113 +1,59 @@
-import {virtualize} from './VirtualElement';
-import frame from './frame';
-import {has} from './util';
 import assign from 'object-assign';
+import frame from 'frame';
+import {camelize, isArray} from 'util';
+import VirtualElement from './VirtualElement';
 
-var PRIORITY_INLINE = 2;
-var locateProps = ['width', 'height', 'top', 'left'];
-var ignoreProps = ['width', 'height', 'top', 'left', 'right', 'bottom'];
+var PRIOR_SCRIPT = 0;
+var PRIOR_INLINE = 4;
+
+var transforms = [];
 var watchList = [];
-var transformations = [];
 
-function layout (element, rules, priority) {
-  if (element instanceof Array) {
-    return element.forEach(element => layout(element, rules, priority));
+function layout (element, properties, priority) {
+  if (isArray(element)) {
+    return element.forEach(element => layout(element, properties, priority));
   }
-  setup(element, rules, priority | 0);
+  virtualize(element).setProperty(properties, priority | 0);
 }
 
 function parse (element) {
-  assign(element.style, { position: 'absolute', left: 0, top: 0 });
-  var rules = parseElement(element);
-  if (Object.keys(rules).length > 0) {
-    setup(element, rules, PRIORITY_INLINE);
+  assign(element.style, { position: 'absolute', top: 0, left: 0 });
+  var properties = {};
+  [].slice.call(element.attributes).forEach(attr => {
+    let name = attr.nodeName;
+    let start = name.charAt(0);
+    let end = name.charAt(name.length - 1);
+    if ((start !== '(' || end !== ')') && (start !== '[' || end !== ']')) {
+      return;
+    }
+    let value = attr.value;
+    if (start === '[') {
+      value = new Function('', `return ${transform(value)}`);
+    }
+    properties[camelize(name.slice(1, -1))] = value;
+  });
+  if (Object.keys(properties).length) {
+    virtualize(element).setProperty(properties, PRIOR_INLINE);
   }
   [].slice.call(element.children).forEach(parse);
 }
 
-function parseElement (element) {
-  var rules = {};
-  [].slice.call(element.attributes).forEach(attr => {
-    var value = parseAttr(attr.nodeName, attr.value);
-    if (null !== value) {
-      rules[camelize(attr.nodeName.slice(1, -1))] = value;
-    }
-  });
-  return rules;
-}
-
-function parseAttr (name, value) {
-  var start = name.charAt(0);
-  var end = name.charAt(name.length - 1);
-  if ((start !== '(' || end !== ')') && (start !== '[' || end !== ']')) {
-    return null;
-  }
-  if (start === '[') {
-    value = new Function('', `return ${transform(value)}`);
-  }
-  return value;
-}
-
-function addTransform (transformation) {
-  transformations.push(transformation);
-}
-
 function transform (expression) {
-  transformations.forEach(transformation => expression = transformation(expression));
+  transforms.forEach(transform => expression = transform(expression));
   return expression;
 }
 
-function setup (element, rules, priority) {
-  var virtual = virtualize(element);
-  if (watchList.indexOf(virtual) < 0) {
-    watchList.push(virtual);
+function virtualize (element) {
+  element = VirtualElement(element);
+  if (watchList.indexOf(element) < 0) {
+    watchList.push(element);
   }
-  var currentRules = virtual.rules;
-  var currentPriorities = virtual.priorities;
-  priority = priority | 0;
-  Object.keys(rules).forEach(name => {
-    if ((currentPriorities[name] | 0) <= priority) {
-      currentRules[name] = rules[name];
-      currentPriorities[name] = priority;
-    }
-  });
+  return element;
 }
 
-function update (virtual) {
-  var style = virtual.style;
-  var state = virtual.state;
-  var rules = virtual.rules;
-  var nextState = virtual.nextState;
-  Object.keys(state).forEach(name => {
-    if (locateProps.indexOf(name) < 0 && !has(rules, name)) {
-      style[name] = '';
-      delete state[name];
-    }
-  });
-  Object.keys(rules).forEach(name => {
-    if (ignoreProps.indexOf(name) < 0 && state[name] !== nextState[name]) {
-      style[name] = virtual.css(name);
-      state[name] = nextState[name];
-    }
-  });
-  locateProps.forEach(name => {
-    style[name] = `${virtual[name](true) | 0}px`;
-  });
-  Object.keys(nextState).forEach(name => delete nextState[name]);
-}
+frame(() => {
+  watchList.forEach(shadow => shadow.update());
+  watchList.forEach(shadow => shadow.digest());
+});
 
-function onFrame () {
-  watchList.forEach(virtual => {
-    Object.keys(virtual.rules).forEach(name => {
-      virtual.value(name);
-    });
-  });
-  watchList.forEach(update);
-}
-
-function camelize(token) {
-  return token.replace(/\-\w/g, match => match.slice(1).toUpperCase());
-}
-
-frame(onFrame);
-export { layout, parse, addTransform };
+export { layout, parse, transforms };
