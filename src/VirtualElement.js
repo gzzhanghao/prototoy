@@ -3,7 +3,6 @@ import {Symbol, $, $$, has, addUnit, isFunction} from './util';
 
 var symVirtual = Symbol('virtual');
 var numericValues = ['top', 'left', 'right', 'bottom', 'width', 'height'];
-var locatingProps = ['top', 'left', 'right', 'bottom', 'width', 'height'];
 
 function VirtualElement (element) {
   if (!element) {

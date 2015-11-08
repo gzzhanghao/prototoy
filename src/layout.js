@@ -3,7 +3,6 @@ import frame from './frame';
 import {camelize, isArray} from './util';
 import VirtualElement from './VirtualElement';
 
-var PRIOR_SCRIPT = 0;
 var PRIOR_INLINE = 4;
 
 var transforms = [];
