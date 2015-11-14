@@ -1,20 +1,20 @@
 import assign from 'object-assign';
 import {Symbol, $, $$, has, addUnit, isFunction} from './util';
 
-var symVirtual = Symbol('virtual');
+var symShadow = Symbol('shadow');
 var numericValues = ['top', 'left', 'right', 'bottom', 'width', 'height'];
 
-function VirtualElement (element) {
+function ShadowElement (element, scope) {
   if (!element) {
     return null;
   }
-  if (has(element, symVirtual)) {
-    return element[symVirtual];
+  if (has(element, symShadow)) {
+    return element[symShadow];
   }
-  if (!(this instanceof  VirtualElement)) {
-    return new VirtualElement(element);
+  if (!(this instanceof  ShadowElement)) {
+    return new ShadowElement(element, scope);
   }
-  element[symVirtual] = this;
+  element[symShadow] = this;
   assign(this, {
     element,
     style: element.style,
@@ -29,16 +29,24 @@ function VirtualElement (element) {
     bcrCache: null,
     computedStyle: false
   });
+  this.childList = [].slice.call(element.children).map(child => ShadowElement(child, scope));
+  parse(this, scope);
 }
 
-VirtualElement.prototype = {
+ShadowElement.prototype = {
+
+  appendChild(child) {
+    child = ShadowElement(child);
+    this.childList.push(child);
+    this.element.appendChild(child.element);
+  },
 
   appendTo(parent) {
-    parent.appendChild(this.element);
+    ShadowElement(parent).appendChild(this);
   },
 
   prependTo(parent) {
-    var childNodes = parent.childNodes;
+    var childNodes = ShadowElement(parent).element.childNodes;
     if (childNodes.length) {
       this.insertBefore(childNodes[0]);
     } else {
@@ -46,12 +54,19 @@ VirtualElement.prototype = {
     }
   },
 
+  insert(child, sibling) {
+    child = ShadowElement(child);
+    sibling = ShadowElement(sibling);
+    this.childList.splice(this.childList.indexOf(sibling), 0, child);
+    this.element.insertBefore(sibling.element, child.element);
+  },
+
   insertBefore(sibling) {
-    sibling.parentNode.insertBefore(this.element, sibling);
+    ShadowElement(sibling).parent().insertBefore(this, sibling);
   },
 
   insertAfter(sibling) {
-    var nextSibling = sibling.nextSibling;
+    var nextSibling = ShadowElement(sibling).element.nextSibling;
     if (nextSibling) {
       this.insertBefore(nextSibling);
     } else {
@@ -60,11 +75,11 @@ VirtualElement.prototype = {
   },
 
   prev() {
-    return VirtualElement(this.element.previousElementSibling);
+    return ShadowElement(this.element.previousElementSibling);
   },
 
   next() {
-    return VirtualElement(this.element.nextElementSibling);
+    return ShadowElement(this.element.nextElementSibling);
   },
 
   parent(selector) {
@@ -75,19 +90,19 @@ VirtualElement.prototype = {
         parent = parent.parentNode;
       }
     }
-    return VirtualElement(parent);
+    return ShadowElement(parent);
   },
 
   children() {
-    return [].map.call(this.element.children, VirtualElement);
+    return this.childList;
   },
 
   find(selector) {
-    return VirtualElement($(selector, this.element));
+    return ShadowElement($(selector, this.element));
   },
 
   findAll(selector) {
-    return $$(selector, this.element).map(VirtualElement);
+    return $$(selector, this.element).map(ShadowElement);
   },
 
   attr(key) {
@@ -140,6 +155,17 @@ VirtualElement.prototype = {
     });
   },
 
+  getProperty(name) {
+    if (!has(this.nextState, name)) {
+      var value = this.property[name].call(this, this);
+      if (numericValues.indexOf(name) >= 0) {
+        value = parseFloat(value) || 0;
+      }
+      this.nextState[name] = value;
+    }
+    return this.nextState[name];
+  },
+
   update() {
     Object.keys(this.property).forEach(name => {
       let value = this.property[name];
@@ -148,9 +174,10 @@ VirtualElement.prototype = {
       }
       this.nextState[name] = value;
     });
+    this.childList.forEach(child => child.update());
   },
 
-  digest() {
+  apply() {
     assign(this.nextState, { top: this.top() | 0, left: this.left() | 0 });
     var width = this.width(true);
     if (width !== null) {
@@ -162,13 +189,6 @@ VirtualElement.prototype = {
     }
     delete this.nextState.right;
     delete this.nextState.bottom;
-
-    Object.keys(this.state).forEach(name => {
-      if (!has(this.nextState, name)) {
-        this.style[name] = '';
-        delete this.state[name];
-      }
-    });
 
     Object.keys(this.nextState).forEach(name => {
       if (!has(this.state, name) || this.state[name] !== this.nextState[name]) {
@@ -186,6 +206,8 @@ VirtualElement.prototype = {
       bcrCache: null,
       computedStyle: false
     });
+
+    this.childList.forEach(child => child.apply());
   },
 
   getBCR() {
@@ -200,22 +222,11 @@ VirtualElement.prototype = {
       this.computedStyle = getComputedStyle(this.element);
     }
     return this.computedStyle;
-  },
-
-  getProperty(name) {
-    if (!has(this.nextState, name)) {
-      var value = this.property[name].call(this, this);
-      if (numericValues.indexOf(name) >= 0) {
-        value = parseFloat(value) || 0;
-      }
-      this.nextState[name] = value;
-    }
-    return this.nextState[name];
   }
 };
 
-function definePosition(top, height, bottom) {
-  assign(VirtualElement.prototype, {
+function definePosition (top, height, bottom) {
+  assign(ShadowElement.prototype, {
 
     [top]() {
       if (has(this.posCache, top)) {
@@ -261,7 +272,38 @@ function definePosition(top, height, bottom) {
   });
 }
 
+function parse (shadow, scope) {
+  var properties = {};
+  var element = shadow.element;
+
+  var scopeName = Object.keys(scope);
+  var scopeValue = scopeName.map(name => scope[name]);
+
+  [].slice.call(element.attributes).forEach(attribute => {
+    let value = attribute.value;
+    let name = attribute.nodeName;
+    let decorator = name.charAt(0) + name.slice(-1);
+
+    name = name.slice(1, -1);
+
+    if (decorator === '()') {
+      on(element, name, new Function(scopeName.concat('$event'), value).bind(shadow, scopeValue));
+    } else if (decorator === '{}') {
+      properties[name] = new Function(scopeName, `return ${value}`).bind(shadow, scopeValue);
+    } else if (decorator === '[]') {
+      properties[name] = value;
+    }
+  });
+
+  shadow.setProperty(properties, ShadowElement.PRIOR_INLINE);
+}
+
 definePosition('top', 'height', 'bottom');
 definePosition('left', 'width', 'right');
 
-export default VirtualElement;
+assign(ShadowElement, {
+  PRIOR_INLINE: 4,
+  PRIOR_SCRIPT: 1
+});
+
+export default ShadowElement;

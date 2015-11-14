@@ -1,58 +1,55 @@
 import assign from 'object-assign';
-import frame from './frame';
-import {camelize, isArray} from './util';
-import VirtualElement from './VirtualElement';
+import ShadowElement from './ShadowElement';
+import {$$} from './util';
 
-var PRIOR_INLINE = 4;
+var incubator = document.createElement('div');
 
-var transforms = [];
-var watchList = [];
-
-function layout (element, properties, priority) {
-  if (isArray(element)) {
-    return element.forEach(element => layout(element, properties, priority));
+function Layout () {
+  if (!(this instanceof Layout)) {
+    return new Layout;
   }
-  virtualize(element).setProperty(properties, priority | 0);
+  this.plugins = {};
+  this.rules = [];
+  this.template = '<!-- -->';
 }
 
-function parse (element) {
-  assign(element.style, { position: 'absolute', top: 0, left: 0 });
-  var properties = {};
-  [].slice.call(element.attributes).forEach(attr => {
-    let name = attr.nodeName;
-    let start = name.charAt(0);
-    let end = name.charAt(name.length - 1);
-    if ((start !== '(' || end !== ')') && (start !== '[' || end !== ']')) {
-      return;
-    }
-    let value = attr.value;
-    if (start === '[') {
-      value = new Function('', `return ${transform(value)}`);
-    }
-    properties[camelize(name.slice(1, -1))] = value;
-  });
-  if (Object.keys(properties).length) {
-    virtualize(element).setProperty(properties, PRIOR_INLINE);
+Layout.prototype = {
+
+  create (scope) {
+    incubator.innerHTML = this.template;
+    return this.parse(incubator.children[0], scope);
+  },
+
+  parse (element, scope) {
+    scope = assign({}, this.plugins, scope);
+
+    var shadow = ShadowElement(element, scope);
+
+    this.rules.forEach(rule => {
+      $$(rule.selector, element).forEach(target => {
+        ShadowElement(target).setProperty(rule.properties, ShadowElement.PRIOR_SCRIPT);
+      });
+    });
+
+    return shadow;
+  },
+
+  template (template) {
+    this.template = template;
+    return this;
+  },
+
+  plugin (plugins) {
+    assign(this.plugins, plugins);
+    return this;
+  },
+
+  style (rules) {
+    Object.keys(rules).forEach(selector => {
+      this.rules.push({ selector, properties: rules[selector] });
+    });
+    return this;
   }
-  [].slice.call(element.children).forEach(parse);
-}
+};
 
-function transform (expression) {
-  transforms.forEach(transform => expression = transform(expression));
-  return expression;
-}
-
-function virtualize (element) {
-  element = VirtualElement(element);
-  if (watchList.indexOf(element) < 0) {
-    watchList.push(element);
-  }
-  return element;
-}
-
-frame(() => {
-  watchList.forEach(shadow => shadow.update());
-  watchList.forEach(shadow => shadow.digest());
-});
-
-export { layout, parse, transforms };
+export default Layout;
