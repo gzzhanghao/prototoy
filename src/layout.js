@@ -10,20 +10,21 @@ function Layout () {
   }
   this.plugins = {};
   this.rules = [];
-  this.template = '<!-- -->';
+  this.properties = {};
+  this.template = '<div></div>';
 }
 
 Layout.prototype = {
 
-  create (scope) {
+  create(scope) {
     incubator.innerHTML = this.template;
     return this.parse(incubator.children[0], scope);
   },
 
-  parse (element, scope) {
+  parse(element, scope) {
     scope = assign({}, this.plugins, scope);
 
-    var shadow = ShadowElement(element, scope);
+    var shadow = ShadowElement(element, scope, this.properties);
 
     this.rules.forEach(rule => {
       $$(rule.selector, element).forEach(target => {
@@ -34,17 +35,22 @@ Layout.prototype = {
     return shadow;
   },
 
-  template (template) {
+  property(properties) {
+    assign(this.properties, properties);
+    return this;
+  },
+
+  template(template) {
     this.template = template;
     return this;
   },
 
-  plugin (plugins) {
+  plugin(plugins) {
     assign(this.plugins, plugins);
     return this;
   },
 
-  style (rules) {
+  style(rules) {
     Object.keys(rules).forEach(selector => {
       this.rules.push({ selector, properties: rules[selector] });
     });

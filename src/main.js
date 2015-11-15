@@ -1,27 +1,21 @@
 import Layout from './layout';
-import mouse from './plugins/mouse';
-import {$$, on} from './util';
 import frame from './frame';
 import $window from './plugins/window';
 
-window.$window = $window;
-
 var root = Layout()
+  .plugin({ $window })
   .style({
     '.test': {
       top: $ => $.prev().bottom() + 40,
-      left: $ => 40 + 20 * Math.sin(Math.PI * 4 * $.top() / $window.height),
-      right: $ => $window.width - 40 + 20 * Math.cos(Math.PI * 4 * $.top() / $window.height),
+      left: $ => 40 + 20 * Math.sin(Math.PI * 2 * $.top() / $window.height),
+      right: $ => $window.width - 40 + 20 * Math.cos(Math.PI * 2 * $.top() / $window.height),
       height: () => 40,
-      background: $ => getColor($.top() / $window.height)
+      background: $ => getColor($.top() / $window.height),
+      borderRadius: $ => 5 + 5 * Math.sin(4 * Math.PI * $.top() / $window.height) + 'px',
+      display: $ => $.top() > -40 && $.top() <= $window.height
     }
   })
   .parse(document.body);
-
-frame(() => {
-  root.update();
-  root.apply();
-});
 
 function getColor (phase) {
   phase = phase * 512;
@@ -32,3 +26,5 @@ function getColor (phase) {
   ];
   return `rgb(${color.join(',')})`;
 }
+
+frame(() => root.onFrame());
