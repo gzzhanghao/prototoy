@@ -1,9 +1,10 @@
 module.exports = {
-  entry: './src/main',
+  entry: './src/index',
   output: {
     path: 'dist',
     filename: 'bundle.min.js',
-    publicPath: '/dist/'
+    publicPath: '/dist/',
+    library: 'Layout'
   },
   module: {
     loaders: [{
@@ -17,7 +18,7 @@ module.exports = {
       loaders: ['html-loader']
     }]
   },
-  devtool: '#inline-source-map',
+  devtool: '#source-map',
   resolve: {
     extensions: ['', '.js', '.less', '.html']
   }

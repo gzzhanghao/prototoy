@@ -11,12 +11,13 @@ function ShadowElement (element, scope) {
   if (has(element, symShadow)) {
     return element[symShadow];
   }
-  if (!(this instanceof  ShadowElement)) {
+  var self = this;
+  if (!(self instanceof  ShadowElement)) {
     return new ShadowElement(element, scope);
   }
-  element[symShadow] = this;
+  element[symShadow] = self;
 
-  assign(this, {
+  assign(self, {
     element,
     style: element.style,
     priorities: {},
@@ -26,9 +27,9 @@ function ShadowElement (element, scope) {
     childList: [].slice.call(element.children).map(child => ShadowElement(child, scope))
   });
 
-  assign(this.style, this.state);
+  assign(self.style, self.state);
 
-  this.clearState();
+  self.clearState();
 
   var properties = {};
 
@@ -131,10 +132,11 @@ ShadowElement.prototype = {
   },
 
   attr(key) {
-    if (!has(this.attrCache, key)) {
-      this.attrCache[key] = this.element.getAttribute(key);
+    var self = this;
+    if (!has(self.attrCache, key)) {
+      self.attrCache[key] = self.element.getAttribute(key);
     }
-    return this.attrCache[key];
+    return self.attrCache[key];
   },
 
   hasAttr(key) {
@@ -142,25 +144,27 @@ ShadowElement.prototype = {
   },
 
   prop(key) {
-    if (!has(this.propCache, key)) {
-      this.propCache[key] = this.element[key];
+    var self = this;
+    if (!has(self.propCache, key)) {
+      self.propCache[key] = self.element[key];
     }
-    return this.propCache[key];
+    return self.propCache[key];
   },
 
   css(name) {
-    var styleCache = this.styleCache;
+    var self = this;
+    var styleCache = self.styleCache;
     if (!has(styleCache, name)) {
-      if (has(this.patch, name)) {
-        styleCache[name] = this.patch[name];
-      } else if (has(this.state, name)) {
-        styleCache[name] = this.state[name];
+      if (has(self.patch, name)) {
+        styleCache[name] = self.patch[name];
+      } else if (has(self.state, name)) {
+        styleCache[name] = self.state[name];
       } else {
-        if (!this.computedStyle) {
-          styleCache[name] = this.style[name];
+        if (!self.computedStyle) {
+          styleCache[name] = self.style[name];
         }
         if (!styleCache[name]) {
-          styleCache[name] = this.getComputedStyle()[name];
+          styleCache[name] = self.getComputedStyle()[name];
         }
       }
     }
@@ -186,9 +190,10 @@ ShadowElement.prototype = {
   },
 
   apply() {
-    var nextState = this.nextState;
-    var state = this.state;
-    var patch = this.patch;
+    var self = this;
+    var nextState = self.nextState;
+    var state = self.state;
+    var patch = self.patch;
 
     if (nextState.display === false) {
       patch.display = 'none';
@@ -198,17 +203,17 @@ ShadowElement.prototype = {
       delete nextState.display;
     }
 
-    patch.transform = `translate(${addUnit('left', this.left() | 0)}, ${addUnit('top', this.top() | 0)}) ${nextState.transform || ''}`;
-    patch.width = this.width(true);
-    patch.height = this.height(true);
+    patch.transform = `translate(${addUnit('left', self.left() | 0)}, ${addUnit('top', self.top() | 0)}) ${nextState.transform || ''}`;
+    patch.width = self.width(true);
+    patch.height = self.height(true);
     unset(['top', 'left', 'right', 'bottom', 'width', 'height', 'transform'], nextState);
 
     assign(patch, nextState);
-    this.clearState();
+    self.clearState();
 
     if (patch.display === 'none') {
       if (state.display !== 'none') {
-        state.display = this.style.display = 'none';
+        state.display = self.style.display = 'none';
       }
       return;
     }
@@ -218,20 +223,21 @@ ShadowElement.prototype = {
       var name = propList[i];
       if (state[name] !== patch[name]) {
         state[name] = patch[name];
-        this.style[name] = addUnit(name, patch[name]);
+        self.style[name] = addUnit(name, patch[name]);
       }
     }
-    this.patch = {};
+    self.patch = {};
   },
 
   clearState() {
-    this.nextState = {};
-    this.styleCache = {};
-    this.attrCache = {};
-    this.propCache = {};
-    this.posCache = {};
-    this.bcrCache = null;
-    this.computedStyle = null;
+    var self = this;
+    self.nextState = {};
+    self.styleCache = {};
+    self.attrCache = {};
+    self.propCache = {};
+    self.posCache = {};
+    self.bcrCache = null;
+    self.computedStyle = null;
   },
 
   onFrame() {
@@ -250,35 +256,38 @@ ShadowElement.prototype = {
   },
 
   getBCR() {
-    if (!this.bcrCache) {
-      this.bcrCache = this.element.getBoundingClientRect();
+    var self = this;
+    if (!self.bcrCache) {
+      self.bcrCache = self.element.getBoundingClientRect();
     }
-    return this.bcrCache;
+    return self.bcrCache;
   },
 
   getComputedStyle() {
-    if (!this.computedStyle) {
-      this.computedStyle = getComputedStyle(this.element);
+    var self = this;
+    if (!self.computedStyle) {
+      self.computedStyle = getComputedStyle(self.element);
     }
-    return this.computedStyle;
+    return self.computedStyle;
   },
 
   property(name) {
-    if (has(this.nextState, name)) {
-      return this.nextState[name];
+    var self = this;
+    if (has(self.nextState, name)) {
+      return self.nextState[name];
     }
-    var value = this.properties[name];
+    var value = self.properties[name];
     if (isFunction(value)) {
-      value = value.call(this, this);
+      value = value.call(self, self);
     }
     if (numericValues.indexOf(name) >= 0) {
       value = parseFloat(value) || 0;
     }
-    return this.nextState[name] = value;
+    return self.nextState[name] = value;
   },
 
   priority(name) {
-    return this.priorities[name] | 0;
+    return self.priorities[name] | 0;
   }
 };
 
@@ -286,55 +295,61 @@ function definePosition (top, height, bottom) {
   assign(ShadowElement.prototype, {
 
     [top]() {
-      if (has(this.posCache, top)) {
-        return this.posCache[top];
+      var self = this;
+      var posCache = self.posCache;
+      if (has(posCache, top)) {
+        return posCache[top];
       }
-      this.posCache[top] = this.state[top];
+      posCache[top] = self.state[top];
       var value = 0;
-      var priority = this.priority(top);
-      if (has(this.properties, top) && (priority >= this.priority(height) || priority >= this.priority(bottom))) {
-        value = this.property(top);
-      } else if (has(this.properties, bottom)) {
-        value = this[bottom]() - this[height]();
+      var priority = self.priority(top);
+      if (has(self.properties, top) && (priority >= self.priority(height) || priority >= self.priority(bottom))) {
+        value = self.property(top);
+      } else if (has(self.properties, bottom)) {
+        value = self[bottom]() - self[height]();
       }
-      return this.posCache[top] = value;
+      return posCache[top] = value;
     },
 
     [height](optional) {
       var bcr;
-      if (has(this.posCache, height)) {
-        if (typeof this.posCache[height] !== 'number') {
-          bcr = this.getBCR();
-          this.posCache[height] = bcr[bottom] - bcr[top];
+      var self = this;
+      var posCache = self.posCache;
+      if (has(posCache, height)) {
+        if (typeof posCache[height] !== 'number') {
+          bcr = self.getBCR();
+          posCache[height] = bcr[bottom] - bcr[top];
         }
-        return this.posCache[height];
+        return posCache[height];
       }
-      this.posCache[height] = this.state[height];
-      var priority = this.priority(height);
-      if (has(this.properties, height) && (priority >= this.priority(top) || priority >= this.priority(bottom))) {
-        this.posCache[height] = this.property(height);
-      } else if (has(this.properties, top) && has(this.properties, bottom)) {
-        this.posCache[height] = this[bottom]() - this[top]();
+      posCache[height] = self.state[height];
+      var priority = self.priority(height);
+      if (has(self.properties, height) && (priority >= self.priority(top) || priority >= self.priority(bottom))) {
+        posCache[height] = self.property(height);
+      } else if (has(self.properties, top) && has(self.properties, bottom)) {
+        posCache[height] = self[bottom]() - self[top]();
       } else if (!optional) {
-        bcr = this.getBCR();
-        this.posCache[height] = bcr[bottom] - bcr[top];
+        bcr = self.getBCR();
+        posCache[height] = bcr[bottom] - bcr[top];
       }
-      return this.posCache[height];
+      return posCache[height];
     },
 
     [bottom]() {
-      if (has(this.posCache, bottom)) {
-        return this.posCache[bottom];
+      var self = this;
+      var posCache = self.posCache;
+      if (has(posCache, bottom)) {
+        return posCache[bottom];
       }
-      this.posCache[bottom] = this.state[top] + this.state[height];
+      posCache[bottom] = self.state[top] + self.state[height];
       var value;
-      var priority = this.priority(bottom);
-      if (has(this.properties, bottom) && (priority > this.priority(top) || priority > this.priority(height))) {
-        value = this.property(bottom);
+      var priority = self.priority(bottom);
+      if (has(self.properties, bottom) && (priority > self.priority(top) || priority > self.priority(height))) {
+        value = self.property(bottom);
       } else {
-        value = this[top]() + this[height]();
+        value = self[top]() + self[height]();
       }
-      return this.posCache[bottom] = value;
+      return posCache[bottom] = value;
     }
   });
 }
