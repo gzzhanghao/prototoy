@@ -35,10 +35,14 @@ function ShadowElement (element, scope) {
   var scopeName = Object.keys(scope);
   var scopeValue = scopeName.map(name => scope[name]);
 
-  [].slice.call(element.attributes).forEach(attribute => {
-    let value = attribute.value;
-    let name = attribute.nodeName;
-    let decorator = name.charAt(0) + name.slice(-1);
+  var attributes = element.attributes;
+
+  for (var i = attributes.length - 1; i >= 0; i--) {
+
+    var attribute = attributes[i];
+    var value = attribute.value;
+    var name = attribute.nodeName;
+    var decorator = name.charAt(0) + name.slice(-1);
 
     name = name.slice(1, -1);
 
@@ -49,7 +53,7 @@ function ShadowElement (element, scope) {
     } else if (decorator === '[]') {
       properties[name] = value;
     }
-  });
+  }
 
   this.setProperty(properties, ShadowElement.PRIOR_INLINE);
 }
@@ -164,24 +168,27 @@ ShadowElement.prototype = {
   },
 
   setProperty(properties, priority) {
-    Object.keys(properties).forEach(name => {
+    var propList = Object.keys(properties);
+    for (var i = propList.length - 1; i >= 0; i--) {
+      var name = propList[i];
       if (this.priority(name) <= priority) {
         this.properties[name] = properties[name];
         this.priorities[name] = priority;
       }
-    });
+    }
   },
 
   update() {
-    Object.keys(this.properties).forEach(this.property.bind(this));
-    this.childList.forEach(child => child.update());
+    var propList = Object.keys(this.properties);
+    for (var i = propList.length - 1; i >= 0; i--) {
+      this.property(propList[i]);
+    }
   },
 
   apply() {
     var nextState = this.nextState;
     var state = this.state;
     var patch = this.patch;
-    var display = state.display;
 
     if (nextState.display === false) {
       patch.display = 'none';
@@ -197,38 +204,46 @@ ShadowElement.prototype = {
     unset(['top', 'left', 'right', 'bottom', 'width', 'height', 'transform'], nextState);
 
     assign(patch, nextState);
+    this.clearState();
 
-    if (patch.display !== 'none') {
-      Object.keys(patch).forEach(name => {
-        if (state[name] !== patch[name]) {
-          state[name] = patch[name];
-          this.style[name] = addUnit(name, patch[name]);
-        }
-      });
-      this.patch = {};
-    } else if (state.display !== 'none') {
-      state.display = this.style.display = 'none';
+    if (patch.display === 'none') {
+      if (state.display !== 'none') {
+        state.display = this.style.display = 'none';
+      }
+      return;
     }
 
-    this.clearState();
-    this.childList.forEach(child => child.apply());
+    var propList = Object.keys(patch);
+    for (var i = propList.length - 1; i >= 0; i--) {
+      var name = propList[i];
+      if (state[name] !== patch[name]) {
+        state[name] = patch[name];
+        this.style[name] = addUnit(name, patch[name]);
+      }
+    }
+    this.patch = {};
   },
 
   clearState() {
-    assign(this, {
-      nextState: {},
-      styleCache: {},
-      attrCache: {},
-      propCache: {},
-      posCache: {},
-      bcrCache: null,
-      computedStyle: null
-    });
+    this.nextState = {};
+    this.styleCache = {};
+    this.attrCache = {};
+    this.propCache = {};
+    this.posCache = {};
+    this.bcrCache = null;
+    this.computedStyle = null;
   },
 
   onFrame() {
-    this.update();
-    this.apply();
+    this.walkThrough(shadow => shadow.update());
+    this.walkThrough(shadow => shadow.apply());
+  },
+
+  walkThrough(cb) {
+    cb(this);
+    for (var i = this.childList.length - 1; i >= 0; i--) {
+      this.childList[i].walkThrough(cb);
+    }
   },
 
   getBCR() {
@@ -251,11 +266,7 @@ ShadowElement.prototype = {
     }
     var value = this.properties[name];
     if (isFunction(value)) {
-      try {
-        value = value.call(this, this);
-      } catch (error) {
-        return console.warn(error);
-      }
+      value = value.call(this, this);
     }
     if (numericValues.indexOf(name) >= 0) {
       value = parseFloat(value) || 0;

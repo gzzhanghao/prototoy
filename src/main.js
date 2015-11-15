@@ -6,7 +6,7 @@ var root = Layout()
   .plugin({ $window })
   .style({
     '.test': {
-      top: $ => $.prev().bottom() + 40,
+      top: $ => 40 + $.prev().bottom(),
       left: $ => 40 + 20 * Math.sin(Math.PI * 2 * $.top() / $window.height),
       right: $ => $window.width - 40 + 20 * Math.cos(Math.PI * 2 * $.top() / $window.height),
       height: () => 40,
