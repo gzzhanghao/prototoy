@@ -239,10 +239,13 @@ ShadowElement.prototype = {
     this.walkThrough(shadow => shadow.apply());
   },
 
-  walkThrough(cb) {
-    cb(this);
-    for (var i = this.childList.length - 1; i >= 0; i--) {
-      this.childList[i].walkThrough(cb);
+  walkThrough(callback) {
+    var nodes = [this];
+    for (var i = 0; i < nodes.length; i++) {
+      nodes = nodes.concat(nodes[i].childList);
+      if (callback(nodes[i]) === false) {
+        return;
+      }
     }
   },
 
