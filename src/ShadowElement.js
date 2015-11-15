@@ -1,5 +1,5 @@
 import assign from 'object-assign';
-import {Symbol, $, $$, has, addUnit, isFunction, isUndefined, bind, unset} from './util';
+import {Symbol, $, $$, has, addUnit, isFunction, bind, unset, camelize} from './util';
 
 var symShadow = Symbol('shadow');
 var numericValues = ['top', 'left', 'right', 'bottom', 'width', 'height'];
@@ -44,7 +44,7 @@ function ShadowElement (element, scope) {
     var name = attribute.nodeName;
     var decorator = name.charAt(0) + name.slice(-1);
 
-    name = name.slice(1, -1);
+    name = camelize(name.slice(1, -1));
 
     if (decorator === '()') {
       on(element, name, bind(new Function(scopeName.concat('$event'), value), this, scopeValue));
