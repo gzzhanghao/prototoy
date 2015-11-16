@@ -123,6 +123,10 @@ ShadowElement.prototype = {
     return this.childList;
   },
 
+  text() {
+    return this.element.innerText;
+  },
+
   find(selector) {
     return ShadowElement($(selector, this.element));
   },
@@ -169,6 +173,32 @@ ShadowElement.prototype = {
       }
     }
     return styleCache[name];
+  },
+
+  setAttr(attrs) {
+    var keys = Object.keys(attrs);
+    for (var i = keys.length - 1; i >= 0; i--) {
+      var key = keys[i];
+      if (this.attrCache[key] !== attrs[key]) {
+        this.element.setAttribute(key, this.attrCache[key] = attrs[key]);
+      }
+    }
+  },
+
+  setProp(props) {
+    var keys = Object.keys(props);
+    for (var i = keys.length - 1; i >= 0; i--) {
+      var key = keys[i];
+      if (this.propCache[key] !== props[key]) {
+        this.element[key] = this.propCache[key] = attrs[key];
+      }
+    }
+  },
+
+  setText(text) {
+    this.element.innerText = text;
+    this.childList = [];
+    return this;
   },
 
   setProperty(properties, priority) {
