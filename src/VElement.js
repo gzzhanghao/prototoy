@@ -1,6 +1,6 @@
 import assign from 'object-assign';
 import VList from './VList';
-import {isUndefined, isFunction, isArray} from './util';
+import {on, isUndefined, isFunction, isArray} from './util';
 
 var propGetter = {
 	attr(self, key) { return self.element.getAttribute(key) },
@@ -21,6 +21,13 @@ function VElement (properties, trace) {
 		self.element = document.createElementNS(properties.namespace, properties.name);
 	} else {
 		self.element = document.createElement(properties.name);
+	}
+
+	var i;
+	var events = Object.keys(properties.event);
+
+	for (i = events.length; i >= 0; i--) {
+		on(self.element, events[i], properties.event[events[i]].bind(self));
 	}
 
 	self.style = self.element.style;
