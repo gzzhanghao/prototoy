@@ -27,7 +27,7 @@ function VElement (properties, trace) {
 	var events = Object.keys(properties.event);
 
 	for (i = events.length; i >= 0; i--) {
-		on(self.element, events[i], properties.event[events[i]].bind(self));
+		on(self.element, events[i], properties.event[events[i]].bind(self, self));
 	}
 
 	self.style = self.element.style;
