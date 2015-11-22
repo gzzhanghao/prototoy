@@ -26,7 +26,7 @@ function VElement (properties, trace) {
 	var i;
 	var events = Object.keys(properties.event);
 
-	for (i = events.length; i >= 0; i--) {
+	for (i = events.length - 1; i >= 0; i--) {
 		on(self.element, events[i], properties.event[events[i]].bind(self, self));
 	}
 
@@ -232,7 +232,7 @@ assign(VElement.prototype, {
 		return this.computedStyle;
 	},
 	setProperties(properties) {
-		this.properties = assign({ attr: {}, prop: {}, style: {}, children: '' }, properties);
+		this.properties = assign({ attr: {}, prop: {}, style: {}, event: {}, children: '' }, properties);
 	}
 });
 
