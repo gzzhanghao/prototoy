@@ -27,6 +27,7 @@ function VElement (properties, trace) {
 	self.key = properties.prop.key;
 	self.state = { attr: {}, prop: {}, style: {}, children: [] };
 	self.nextState = { attr: {}, prop: {}, style: {} };
+	self.data = properties.data || {};
 
 	if (properties.namespace) {
 		self.element = document.createElementNS(properties.namespace, properties.name);
@@ -153,7 +154,6 @@ assign(VElement.prototype, {
 
 		for (i = nodes.length - 1; i >= 0; i--) {
 			node = nodes[i];
-
 			keys = Object.keys(node.properties.attr);
 			for (j = keys.length - 1; j >= 0; j--) {
 				value = node.getProperty('attr', keys[j]);
@@ -163,15 +163,15 @@ assign(VElement.prototype, {
 					node.element.setAttribute(keys[j], value);
 				}
 			}
+		}
+
+		for (i = 0; i < updateNodes.length; i++) {
+			node = updateNodes[i];
 
 			keys = Object.keys(node.properties.style);
 			for (j = keys.length - 1; j >= 0; j--) {
 				node.getProperty('style', keys[j]);
 			}
-		}
-
-		for (i = 0; i < updateNodes.length; i++) {
-			node = updateNodes[i];
 
 			nextState = node.nextState.style;
 			state = node.state.style;
