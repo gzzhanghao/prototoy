@@ -120,10 +120,12 @@ function VElement (properties, trace) {
 });
 
 assign(VElement.prototype, {
-	update() {
+	update(properties) {
 		var i, j;
 		var keys, node, nextState, state, value, children;
 		var nodes = [this];
+
+		this.properties = properties;
 
 		for (i = 0; i < nodes.length; i++) {
 			node = nodes[i];
@@ -184,7 +186,7 @@ assign(VElement.prototype, {
 				if (state.display !== 'none') {
 					node.element.style.display = state.display = 'none';
 				}
-				return;
+				continue;
 			}
 
 			nextState.display = nextState.display || 'block';
