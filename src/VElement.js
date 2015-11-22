@@ -4,7 +4,7 @@ import {isUndefined, isFunction, isArray} from './util';
 
 var propGetter = {
 	attr(self, key) { return self.element.getAttribute(key) },
-	style(self, key) { return self.element.style[key] || self.getComputedStyle()[key] },
+	style(self, key) { return self.style[key] || self.getComputedStyle()[key] },
 	prop(self, prop) {
 		switch (prop) {
 			case 'top': case 'bottom': case 'left': case 'right':
@@ -34,6 +34,7 @@ function VElement (properties, trace) {
 		self.element = document.createElement(properties.name);
 	}
 
+	self.style = self.element.style;
 	self.elements = [self];
 
 	var children = properties.children;
@@ -86,6 +87,9 @@ function VElement (properties, trace) {
 			if (isUndefined(nextState[height])) {
 				if (!isUndefined(this.properties.prop[height])) {
 					nextState[height] = this.getProperty('prop', height);
+					if (nextState[height] < 0) {
+						nextState[height] = 0;
+					}
 				} else if (!optional) {
 					var bcr = this.getBCR();
 					nextState[height] = bcr[bottom] - bcr[top];
@@ -107,7 +111,7 @@ assign(VElement.prototype, {
 	update(properties) {
 		var i, j;
 		var keys, node, nextState, state, value, children;
-		var nodes = [this];
+		var nodes = [this], updateNodes = [this];
 
 		if (properties) {
 			this.setProperties(properties);
@@ -164,13 +168,17 @@ assign(VElement.prototype, {
 			for (j = keys.length - 1; j >= 0; j--) {
 				node.getProperty('style', keys[j]);
 			}
+		}
+
+		for (i = 0; i < updateNodes.length; i++) {
+			node = updateNodes[i];
 
 			nextState = node.nextState.style;
 			state = node.state.style;
 
 			if (nextState.display === 'none' || node.getProperty('prop', 'show') === false) {
 				if (state.display !== 'none') {
-					node.element.style.display = state.display = 'none';
+					node.style.display = state.display = 'none';
 				}
 				continue;
 			}
@@ -179,21 +187,25 @@ assign(VElement.prototype, {
 			nextState.position = 'absolute';
 			nextState.top = nextState.left = 0;
 
-			nextState.transform = `translate(${node.left()}px, ${node.top()}px) ${nextState.transform || ''}`;
+			nextState.transform = `translate(${node.left() | 0}px, ${node.top() | 0}px) ${nextState.transform || ''}`;
 			value = node.width(true);
 			if (!isUndefined(value)) {
-				nextState.width = `${value}px`;
+				nextState.width = `${value | 0}px`;
 			}
 			value = node.height(true);
 			if (!isUndefined(value)) {
-				nextState.height = `${node.height(true)}px`;
+				nextState.height = `${value | 0}px`;
 			}
 
 			keys = Object.keys(nextState);
 			for (j = keys.length - 1; j >= 0; j--) {
 				if (state[keys[j]] !== nextState[keys[j]]) {
-					node.element.style[keys[j]] = state[keys[j]] = nextState[keys[j]];
+					node.style[keys[j]] = state[keys[j]] = nextState[keys[j]];
 				}
+			}
+
+			if (isArray(node.children)) {
+				updateNodes = updateNodes.concat(node.children);
 			}
 		}
 

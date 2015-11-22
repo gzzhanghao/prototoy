@@ -3,24 +3,32 @@ import VElement from './VElement';
 import * as util from './util';
 
 var $mouse = { x: 0, y: 0 };
-window.elements = [{ key: 1, value: 1 },{ key: 2, value: 2 },{ key: 3, value: 3 },{ key: 4, value: 4 },{ key: 5, value: 5 },{ key: 6, value: 6 },{ key: 7, value: 7 },{ key: 8, value: 8 },{ key: 9, value: 9 }];
+var $window = { width: window.innerWidth, height: window.innerHeight };
+
+window.elements = [];
+
+for (var i = 20; i >= 0; i--) {
+	elements.push({ value: i, key: i });
+}
 
 var virtual = new VElement({
-	name: 'hello',
+	name: 'div',
+	attr: { 'class': 'root container' },
 	children: [
 		() => elements.map(v => ({
 			name: 'world',
 			prop: {
 				key: v.key,
 				top: $ => $.prev ? $.prev.bottom() + 20 : $mouse.y,
-				left: $ => 40 + 40 * Math.cos(($.top() + $mouse.x) / 90),
-				width: $ => window.innerWidth - 40 + 40 * Math.sin(($.top() + $mouse.x) / 90) - $.left(),
+				left: $ => Math.abs(120 * Math.cos(($.top() + $mouse.x) / 90)),
+				width: $ => $window.width - Math.abs(120 * Math.cos(($.top() + $mouse.x) / 90)) - $.left(),
+				show: $ => $.top() < $window.height,
 				height: 20
 			},
 			style: {
 				background: 'lightblue'
 			},
-			children: v.value
+			children: () => v.value
 		}))
 	]
 });
@@ -32,6 +40,8 @@ function frame () {
 
 requestAnimationFrame(frame);
 
+util.on(window, 'resize', () => $window = { width: window.innerWidth, height: window.innerHeight });
 util.on(window, 'mousemove', event => $mouse = { x: event.pageX, y: event.pageY });
+util.on(window, 'touchmove', event => $mouse = { x: event.touches[0].pageX, y: event.touches[0].pageY });
 
 document.body.appendChild(virtual.element);
