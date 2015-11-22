@@ -1,8 +1,46 @@
 import assign from 'object-assign';
-import Layout from './Layout';
-import ShadowElement from './ShadowElement';
+import VElement from './VElement';
 import * as util from './util';
 
-assign(Layout, { ShadowElement, assign }, util);
+var $mouse = { x: 0, y: 0 };
+window.elements = [{ key: 1, value: 1 },{ key: 2, value: 2 },{ key: 3, value: 3 },{ key: 4, value: 4 },{ key: 5, value: 5 },{ key: 6, value: 6 },{ key: 7, value: 7 },{ key: 8, value: 8 },{ key: 9, value: 9 }];
 
-export default Layout;
+var virtual = new VElement({
+	name: 'hello',
+	attr: {},
+	prop: {
+		width: () => window.innerWidth / 2,
+		height: () => $mouse.y
+	},
+	style: {},
+	children: [
+		() => elements.map(v => ({
+			name: 'world',
+			attr: {},
+			prop: {
+				key: v.key,
+				top: $ => $.prev ? $.prev.bottom() + 20 : $mouse.y,
+				left: $ => 40 + 40 * Math.cos(($.top() + $mouse.x) / 90),
+				right: $ => window.innerWidth - 40 + 40 * Math.sin(($.top() + $mouse.x) / 90),
+				height: 20
+			},
+			style: {
+				background: 'lightblue'
+			},
+			children: v.value
+		}))
+	]
+});
+
+function frame () {
+	virtual.construct();
+	virtual.update();
+	virtual.clearState();
+	requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+util.on(window, 'mousemove', event => $mouse = { x: event.pageX, y: event.pageY });
+
+document.body.appendChild(virtual.element);

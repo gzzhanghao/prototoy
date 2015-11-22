@@ -9,17 +9,14 @@ module.exports = {
   module: {
     loaders: [{
       test: /\.js$/,
-      loaders: ['babel-loader']
-    }, {
-      test: /\.less$/,
-      loaders: ['style-loader', 'css-loader', 'less-loader']
-    }, {
-      test: /\.html$/,
-      loaders: ['html-loader']
+      loader: 'babel-loader',
+      query: {
+        presets: ['es2015']
+      }
     }]
   },
   devtool: '#source-map',
   resolve: {
-    extensions: ['', '.js', '.less', '.html']
+    extensions: ['', '.js']
   }
 };
