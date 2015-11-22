@@ -35,7 +35,6 @@ assign(VList.prototype, {
 				}
 				virtual = elements[index++];
 			}
-			virtual.construct(child);
 			return virtual;
 		});
 		for (var i = elements.length - 1; i >= index; i--) {

@@ -33,9 +33,7 @@ var virtual = new VElement({
 });
 
 function frame () {
-	virtual.construct();
 	virtual.update();
-	virtual.clearState();
 	requestAnimationFrame(frame);
 }
 
