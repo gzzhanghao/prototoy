@@ -4,19 +4,7 @@ import {isUndefined, isFunction, isArray} from './util';
 
 var propGetter = {
 	attr(self, key) { return self.element.getAttribute(key) },
-	style(self, key) { return self.style[key] || self.getComputedStyle()[key] },
-	prop(self, prop) {
-		switch (prop) {
-			case 'top': case 'bottom': case 'left': case 'right':
-				return self.getBCR()[prop];
-			case 'height':
-				return self.getBCR().bottom - self.getBCR().top;
-			case 'width':
-				return self.getBCR().right - self.getBCR().left;
-			case 'show':
-				return false;
-		}
-	}
+	style(self, key) { return self.style[key] || self.getComputedStyle()[key] }
 };
 
 function VElement (properties, trace) {
@@ -62,11 +50,7 @@ function VElement (properties, trace) {
 		if (!isUndefined(this.properties[property][key])) {
 			return this.getProperty(property, key);
 		}
-		var state = this.state[property];
-		if (isUndefined(state[key])) {
-			state[key] = propGetter[property](this, key);
-		}
-		return state[key];
+		return propGetter[property](this, key);
 	};
 });
 
@@ -88,9 +72,6 @@ function VElement (properties, trace) {
 			if (isUndefined(nextState[height])) {
 				if (!isUndefined(this.properties.prop[height])) {
 					nextState[height] = this.getProperty('prop', height);
-					if (nextState[height] < 0) {
-						nextState[height] = 0;
-					}
 				} else if (!optional) {
 					var bcr = this.getBCR();
 					nextState[height] = bcr[bottom] - bcr[top];
@@ -126,8 +107,9 @@ assign(VElement.prototype, {
 				if (isFunction(children)) {
 					children = children();
 				}
+				children += '';
 				if (state !== children) {
-					node.children = node.state.children = node.element.innerHTML = '' + children;
+					node.children = node.state.children = node.element.innerHTML = children;
 				}
 				continue;
 			}
@@ -154,13 +136,16 @@ assign(VElement.prototype, {
 
 		for (i = nodes.length - 1; i >= 0; i--) {
 			node = nodes[i];
+			state = node.state.attr;
 			keys = Object.keys(node.properties.attr);
 			for (j = keys.length - 1; j >= 0; j--) {
 				value = node.getProperty('attr', keys[j]);
-				if (value === false) {
-					node.element.removeAttribute(keys[j]);
-				} else {
-					node.element.setAttribute(keys[j], value);
+				if (value !== state[keys[j]]) {
+					if (value === false) {
+						node.element.removeAttribute(keys[j]);
+					} else {
+						node.element.setAttribute(keys[j], value);
+					}
 				}
 			}
 		}
@@ -218,10 +203,6 @@ assign(VElement.prototype, {
 		if (isUndefined(nextState[key])) {
 			var value = this.properties[property][key];
 			if (isFunction(value)) {
-				nextState[key] = this.state[property][key];
-				if (isUndefined(nextState[key])) {
-					nextState[key] = propGetter[property](this, key);
-				}
 				value = value.call(this, this);
 			}
 			if (isUndefined(value)) {
