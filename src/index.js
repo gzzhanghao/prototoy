@@ -7,21 +7,14 @@ window.elements = [{ key: 1, value: 1 },{ key: 2, value: 2 },{ key: 3, value: 3 
 
 var virtual = new VElement({
 	name: 'hello',
-	attr: {},
-	prop: {
-		width: () => window.innerWidth / 2,
-		height: () => $mouse.y
-	},
-	style: {},
 	children: [
 		() => elements.map(v => ({
 			name: 'world',
-			attr: {},
 			prop: {
 				key: v.key,
 				top: $ => $.prev ? $.prev.bottom() + 20 : $mouse.y,
 				left: $ => 40 + 40 * Math.cos(($.top() + $mouse.x) / 90),
-				right: $ => window.innerWidth - 40 + 40 * Math.sin(($.top() + $mouse.x) / 90),
+				width: $ => window.innerWidth - 40 + 40 * Math.sin(($.top() + $mouse.x) / 90) - $.left(),
 				height: 20
 			},
 			style: {

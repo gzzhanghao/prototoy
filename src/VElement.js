@@ -22,14 +22,8 @@ var propGetter = {
 function VElement (properties, trace) {
 	var self = this;
 
-	properties.attr = properties.attr || {};
-	properties.prop = properties.prop || {};
-	properties.style = properties.style || {};
-	if (isUndefined(properties.children)) {
-		properties.children = '';
-	}
-
-	self.properties = properties;
+	self.setProperties(properties);
+	properties = self.properties;
 	self.key = properties.prop.key;
 	self.state = { attr: {}, prop: {}, style: {}, children: [] };
 	self.nextState = { attr: {}, prop: {}, style: {} };
@@ -81,8 +75,6 @@ function VElement (properties, trace) {
 			if (isUndefined(nextState[top])) {
 				if (!isUndefined(this.properties.prop[top])) {
 					nextState[top] = this.getProperty('prop', top);
-				} else if (!isUndefined(this.properties.prop[bottom])) {
-					nextState[top] = this[bottom]() - this[height]();
 				} else {
 					nextState[top] = 0;
 				}
@@ -92,11 +84,8 @@ function VElement (properties, trace) {
 		[height](optional) {
 			var nextState = this.nextState.prop;
 			if (isUndefined(nextState[height])) {
-				var properties = this.properties.prop;
-				if (!isUndefined(properties[height])) {
+				if (!isUndefined(this.properties.prop[height])) {
 					nextState[height] = this.getProperty('prop', height);
-				} else if (!isUndefined(properties[top]) && !isUndefined(properties[bottom])) {
-					nextState[height] = this[bottom]() - this[top]();
 				} else if (!optional) {
 					var bcr = this.getBCR();
 					nextState[height] = bcr[bottom] - bcr[top];
@@ -105,14 +94,9 @@ function VElement (properties, trace) {
 			return nextState[height];
 		},
 		[bottom]() {
-			var state = this.state.prop;
 			var nextState = this.nextState.prop;
 			if (isUndefined(nextState[bottom])) {
-				if (!isUndefined(this.properties.prop[bottom])) {
-					nextState[bottom] = this.getProperty('prop', bottom);
-				} else {
-					nextState[bottom] = this[top]() + this[height]();
-				}
+				nextState[bottom] = this[top]() + this[height]();
 			}
 			return nextState[bottom];
 		}
@@ -125,7 +109,9 @@ assign(VElement.prototype, {
 		var keys, node, nextState, state, value, children;
 		var nodes = [this];
 
-		this.properties = properties;
+		if (properties) {
+			this.setProperties(properties);
+		}
 
 		for (i = 0; i < nodes.length; i++) {
 			node = nodes[i];
@@ -136,7 +122,7 @@ assign(VElement.prototype, {
 					children = children();
 				}
 				if (state !== children) {
-					node.state.children = node.element.innerHTML = children;
+					node.children = node.state.children = node.element.innerHTML = '' + children;
 				}
 				continue;
 			}
@@ -144,7 +130,7 @@ assign(VElement.prototype, {
 				if (state[j] instanceof VList) {
 					state[j].construct(children[j]);
 				} else {
-					state[j].properties = children[j];
+					state[j].setProperties(children[j]);
 				}
 				nodes = nodes.concat(state[j].elements);
 			}
@@ -244,6 +230,9 @@ assign(VElement.prototype, {
 			this.computedStyle = getComputedStyle(this.element);
 		}
 		return this.computedStyle;
+	},
+	setProperties(properties) {
+		this.properties = assign({ attr: {}, prop: {}, style: {}, children: '' }, properties);
 	}
 });
 
