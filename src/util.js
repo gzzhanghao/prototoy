@@ -8,7 +8,7 @@ export var isArray = value => value instanceof Array;
 
 export function assign(base) {
   var i, ii, j, source, keys;
-  for (var i = 1, ii = arguments.length; i < ii; i++) {
+  for (i = 1, ii = arguments.length; i < ii; i++) {
     source = arguments[i];
     keys = Object.keys(source);
     for (j = keys.length - 1; j >= 0; j--) {
