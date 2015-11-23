@@ -2,11 +2,6 @@ import assign from 'object-assign';
 import VList from './VList';
 import {on, isUndefined, isFunction, isArray} from './util';
 
-var propGetter = {
-  attr: (self, key) => self.element.getAttribute(key),
-  style: (self, key) => self.style[key]
-};
-
 function VElement(properties, trace) {
   var self = this;
 
@@ -54,19 +49,6 @@ function VElement(properties, trace) {
   });
 }
 
-['attr', 'style'].forEach(property => {
-  VElement.prototype[property] = function (key) {
-    if (!isUndefined(this.properties[property][key])) {
-      return this.getProperty(property, key);
-    }
-    var state = this.state[property];
-    if (isUndefined(state[key])) {
-      state[key] = propGetter[property](this, key);
-    }
-    return state[key];
-  };
-});
-
 [['top', 'height', 'bottom'], ['left', 'width', 'right']].forEach(([top, height, bottom]) => {
   assign(VElement.prototype, {
 
@@ -106,6 +88,17 @@ function VElement(properties, trace) {
 });
 
 assign(VElement.prototype, {
+
+  attr(key) {
+    if (!isUndefined(this.properties.attr[key])) {
+      return this.getProperty('attr', key);
+    }
+    var state = this.state.attr;
+    if (isUndefined(state[key])) {
+      state[key] = this.element.getAttribute(key);
+    }
+    return state[key];
+  },
 
   update(properties) {
     var nodes = [this];
@@ -166,11 +159,11 @@ assign(VElement.prototype, {
           value += '';
           if (value !== state[keys[j]]) {
             node.element.setAttribute(keys[j], value);
-            this.bcr = this.computedStyle = null;
+            node.bcr = null;
           }
         } else if (state[keys[j]] === false) {
           node.element.removeAttribute(keys[j]);
-          this.bcr = this.computedStyle = null;
+          node.bcr = null;
         }
         state[keys[j]] = value;
       }
@@ -191,8 +184,13 @@ assign(VElement.prototype, {
       if (nextState.display === 'none' || node.getProperty('prop', 'show') === false) {
         if (state.display !== 'none') {
           node.style.display = state.display = 'none';
-          this.computedStyle = null;
-          this.bcr = { top: 0, right: 0, left: 0, bottom: 0, width: 0, height: 0 };
+          children = [node];
+          for (j = 0; j < children.length; j++) {
+            children[j].bcr = { top: 0, right: 0, left: 0, bottom: 0, width: 0, height: 0 };
+            if (isArray(children[j].children)) {
+              children = children.concat(children[j].children);
+            }
+          }
         }
         continue;
       }
@@ -215,7 +213,7 @@ assign(VElement.prototype, {
       for (j = keys.length - 1; j >= 0; j--) {
         if (state[keys[j]] !== nextState[keys[j]] + '') {
           node.style[keys[j]] = state[keys[j]] = nextState[keys[j]] + '';
-          this.bcr = this.computedStyle = null;
+          node.bcr = null;
         }
       }
 
@@ -252,13 +250,6 @@ assign(VElement.prototype, {
       this.bcr = { width: bcr.right - bcr.left, height: bcr.bottom - bcr.top, top: bcr.top, right: bcr.right, left: bcr.left, bottom: bcr.bottom };
     }
     return this.bcr;
-  },
-
-  getComputedStyle() {
-    if (!this.computedStyle) {
-      this.computedStyle = getComputedStyle(this.element);
-    }
-    return this.computedStyle;
   },
 
   setProperties(properties) {
