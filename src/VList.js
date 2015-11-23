@@ -1,11 +1,10 @@
-import assign from 'object-assign';
 import VElement from './VElement';
-import {isFunction} from './util';
+import {assign, isFunction} from './util';
 
 function VList() {
   var self = this;
 
-  self.element = document.createComment('vlist end');
+  self.element = document.createComment('vlist');
   self.elements = [];
 }
 
@@ -21,7 +20,7 @@ assign(VList.prototype, {
     var keys = elements.map(child => child.key);
 
     this.elements = children.map(child => {
-      let oriIdx = keys.indexOf(child.prop.key, index);
+      let oriIdx = keys.indexOf(child.key, index);
       let virtual;
       if (oriIdx < 0) {
         virtual = new VElement(child);

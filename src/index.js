@@ -3,33 +3,37 @@ import { on } from './util';
 
 var $mouse = { x: 0, y: 0 };
 var $window = { width: window.innerWidth, height: window.innerHeight };
-
 var elements = window.elements = [];
-var requestAnimationFrame = window.requestAnimationFrame;
 
 for (var i = 20; i >= 0; i--) {
   elements.push({ value: i, key: i });
 }
 
-var virtual = new VElement({
-  name: 'div',
-  attr: { 'class': 'root container' },
-  children: [
-    () => elements.map(v => ({
-      name: 'world',
-      prop: {
-        key: v.key,
-        top: $ => $.prev ? $.prev.bottom() + 20 : $mouse.y,
-        left: $ => Math.abs(120 * Math.cos(($.top() + $mouse.x) / 90)),
-        width: $ => $window.width - Math.abs(120 * Math.cos(($.top() + $mouse.x) / 90)) - $.left(),
+function e(name, props, children) {
+  return {
+    name, children,
+    key: props.k || '',
+    attr: props.a || {},
+    prop: props.p || {},
+    style: props.s || {},
+    event: props.e || {}
+  };
+}
+
+var virtual = new VElement(e('div', { a: { 'class': 'root container' } }, [
+    () => elements.map(v => e('world', {
+      k: v.key,
+      p: {
+        top: $ => $.prev ? $.prev.bottom() + 20 : 0,
+        left: $ => Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)),
+        width: $ => $window.width - Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)) - $.left(),
         height: 20,
-        show: $ => $.top() < $window.height
+        display: $ => $.top() > -$.height() && $.top() < $window.height
       },
-      style: { background: 'lightblue' },
-      children: v.value
-    }))
+      s: { background: 'lightblue' }
+    }, v.value))
   ]
-});
+));
 
 function frame() {
   virtual.update();
@@ -46,4 +50,4 @@ on(window, 'touchmove', event => {
   $mouse = { x: event.touches[0].pageX, y: event.touches[0].pageY };
 });
 
-document.body.appendChild(virtual.element);
+virtual.appendTo(document.body);

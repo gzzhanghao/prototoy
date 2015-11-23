@@ -1,24 +1,18 @@
-import assign from 'object-assign';
 import VList from './VList';
-import {on, isUndefined, isFunction, isArray} from './util';
+import * as util from './util';
 
-function VElement(properties, trace) {
+var {on, assign, isUndefined, isFunction, isArray} = util;
+
+function VElement(properties) {
   var self = this;
 
-  self.setProperties(properties);
-
-  properties = self.properties;
-
-  self.key = properties.prop.key;
+  self.properties = properties;
+  self.key = properties.key;
   self.state = { attr: {}, prop: {}, style: {}, children: [] };
   self.nextState = { attr: {}, prop: {}, style: {} };
   self.data = properties.data || {};
 
-  if (properties.namespace) {
-    self.element = document.createElementNS(properties.namespace, properties.name);
-  } else {
-    self.element = document.createElement(properties.name);
-  }
+  self.element = document.createElement(properties.name);
 
   // @todo dynamic binding event handler
 
@@ -33,7 +27,7 @@ function VElement(properties, trace) {
   var children = properties.children;
 
   if (!isArray(children)) {
-    self.state.children = self.element.innerHTML = children;
+    self.children = self.state.children = self.element.innerHTML = children + '';
     return;
   }
 
@@ -89,6 +83,14 @@ function VElement(properties, trace) {
 
 assign(VElement.prototype, {
 
+  appendTo(parent) {
+    parent.appendChild(this.element);
+  },
+
+  insertBefore(sibling) {
+    sibling.parentNode.insertBefore(this.element, sibling);
+  },
+
   attr(key) {
     if (!isUndefined(this.properties.attr[key])) {
       return this.getProperty('attr', key);
@@ -106,7 +108,7 @@ assign(VElement.prototype, {
     var i, j, keys, node, nextState, state, value, children;
 
     if (properties) {
-      this.setProperties(properties);
+      this.properties = properties;
     }
 
     // Update DOM structure
@@ -129,22 +131,15 @@ assign(VElement.prototype, {
         if (state[j] instanceof VList) {
           state[j].update(children[j]);
         } else {
-          state[j].setProperties(children[j]);
+          state[j].properties = children[j];
         }
         nodes = nodes.concat(state[j].elements);
       }
-    }
-
-    // Build relation
-    for (i = nodes.length - 1; i >= 0; i--) {
-      children = nodes[i].state.children;
-      if (isArray(children)) {
-        children = nodes[i].children = children.reduce((a, b) => a.concat(b.elements), []);
-        for (j = children.length - 1; j >= 0; j--) {
-          children[j].prev = children[j - 1];
-          children[j].next = children[j + 1];
-          children[j].parent = nodes[i];
-        }
+      children = nodes[i].children = state.reduce((a, b) => a.concat(b.elements), []);
+      for (j = children.length - 1; j >= 0; j--) {
+        children[j].prev = children[j - 1];
+        children[j].next = children[j + 1];
+        children[j].parent = nodes[i];
       }
     }
 
@@ -250,10 +245,6 @@ assign(VElement.prototype, {
       this.bcr = { width: bcr.right - bcr.left, height: bcr.bottom - bcr.top, top: bcr.top, right: bcr.right, left: bcr.left, bottom: bcr.bottom };
     }
     return this.bcr;
-  },
-
-  setProperties(properties) {
-    this.properties = assign({ attr: {}, prop: {}, style: {}, event: {}, children: '' }, properties);
   }
 });
 
