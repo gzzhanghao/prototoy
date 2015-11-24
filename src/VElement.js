@@ -1,7 +1,7 @@
 import VList from './VList';
 import * as util from './util';
 
-var {on, assign, isUndefined, isFunction, isArray, isValidNum} = util;
+var {on, assign, isUndefined, isFunction, isArray, isValidNum, isString} = util;
 
 function VElement(props) {
   var self = this;
@@ -16,6 +16,10 @@ function VElement(props) {
   self.elements = [self];
 
   var children = props.children;
+
+  if (isUndefined(children)) {
+    return;
+  }
 
   if (!isArray(children)) {
     if (isFunction(children)) {
@@ -78,10 +82,17 @@ assign(VElement.prototype, {
 
   appendTo(parent) {
     parent.appendChild(this.element);
+    return this;
   },
 
   insertBefore(sibling) {
     sibling.parentNode.insertBefore(this.element, sibling);
+    return this;
+  },
+
+  replace(landmark) {
+    landmark.parentNode.replaceChild(this.element, landmark);
+    return this;
   },
 
   update(props) {
@@ -98,6 +109,10 @@ assign(VElement.prototype, {
 
       state = node.state.children;
       children = node.props.children;
+
+      if (isUndefined(children)) {
+        continue;
+      }
 
       if (!isArray(children)) {
         if (isFunction(children)) {
@@ -227,7 +242,12 @@ assign(VElement.prototype, {
   }
 });
 
+VElement.e = function(name, layout, trans, children, key = void 0) {
+  return { name, layout, trans, children, key };
+};
+
 VElement.transforms = {
+
   layout(config, style) {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
@@ -239,13 +259,22 @@ VElement.transforms = {
       style.height = config.height + 'px';
     }
   },
+
   background(config, style) {
     style.background = config;
   },
+
   display(config, style) {
     if (config === false) {
-      style.config = 'none';
+      style.display = 'none';
     }
+  },
+
+  className(config, style, attr) {
+    if (isArray(config)) {
+      config = config.join(' ');
+    }
+    attr.class = config;
   }
 };
 

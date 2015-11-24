@@ -34,6 +34,7 @@ assign(VList.prototype, {
           parent.removeChild(elements[index++].element);
         }
         virtual = elements[index++];
+        virtual.props = child;
       }
       return virtual;
     });
