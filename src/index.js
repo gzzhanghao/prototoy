@@ -12,12 +12,14 @@ for (var i = 20; i >= 0; i--) {
 var e = VElement.e;
 
 var virtual = new VElement(
-  e('div', {}, { className: ['root', 'container'] }, [
+  e('div', {}, $ => ({
+    className: ['root', 'container']
+  }), [
     () => elements.map(v =>
       e('world', {
         top: $ => $.prev ? $.prev.bottom() + 20 : 0,
-        left: $ => Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)),
-        width: $ => $window.width - Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)) - $.left(),
+        left: $ => 120 * Math.abs(Math.cos(($.top() + $mouse.y + $mouse.x) / 90)),
+        width: $ => $window.width - 120 * Math.abs(Math.cos(($.top() + $mouse.y + $mouse.x) / 90)) - $.left(),
         height: 20
       }, $ => ({
         background: 'lightblue',

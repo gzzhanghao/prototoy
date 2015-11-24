@@ -1,7 +1,6 @@
-import VList from './VList';
 import * as util from './util';
 
-var {on, assign, isUndefined, isFunction, isArray, isValidNum, isString} = util;
+var {assign, isUndefined, isFunction, isArray, isValidNum} = util;
 
 function VElement(props) {
   var self = this;
@@ -13,7 +12,6 @@ function VElement(props) {
 
   self.element = document.createElement(props.name);
   self.style = self.element.style;
-  self.elements = [self];
 
   var children = props.children;
 
@@ -31,7 +29,7 @@ function VElement(props) {
 
   children = self.state.children = children.map(child => {
     if (isFunction(child)) {
-      child = new VList;
+      child = { element: document.createComment('list'), elements: [] };
     } else {
       child = new VElement(child);
     }
@@ -41,7 +39,11 @@ function VElement(props) {
   });
 }
 
-[['top', 'height', 'bottom'], ['left', 'width', 'right']].forEach(([top, height, bottom]) => {
+[['top', 'height', 'bottom'], ['left', 'width', 'right']].forEach(props => {
+  var top = props[0];
+  var height = props[1];
+  var bottom = props[2];
+
   assign(VElement.prototype, {
 
     [top]() {
@@ -96,7 +98,7 @@ assign(VElement.prototype, {
   },
 
   update(props) {
-    var i, j, keys, oriKeys, node, state, nextState, value, children;
+    var i, j, keys, oriKeys, node, state, nextState, value, children, index, elements, parent;
     var nodes = [this];
 
     this.props = props || this.props;
@@ -126,12 +128,40 @@ assign(VElement.prototype, {
       }
 
       for (j = children.length - 1; j >= 0; j--) {
-        if (isFunction(children[j])) {
-          state[j].update(children[j]);
-        } else {
+
+        if (!isFunction(children[j])) {
           state[j].props = children[j];
+          nodes.push(state[j]);
+          continue;
         }
-        nodes = nodes.concat(state[j].elements);
+
+        index = 0;
+        elements = state[j].elements;
+        parent = node.element;
+        keys = elements.map(child => child.props.key);
+
+        nodes = nodes.concat(state[j].elements = children[j]().map(child => {
+          let oriIdx = keys.indexOf(child.key, index);
+          let virtual;
+          if (oriIdx < 0) {
+            virtual = new VElement(child);
+            if (index < elements.length) {
+              parent.insertBefore(virtual.element, elements[index].element);
+            } else {
+              parent.insertBefore(virtual.element, state[j].element);
+            }
+          } else {
+            while (index < oriIdx) {
+              parent.removeChild(elements[index++].element);
+            }
+            virtual = elements[index++];
+            virtual.props = child;
+          }
+          return virtual;
+        }));
+        for (value = elements.length - 1; value >= index; value--) {
+          parent.removeChild(elements[value].element);
+        }
       }
 
       children = nodes[i].children = state.reduce((a, b) => a.concat(b.elements), []);
@@ -242,7 +272,7 @@ assign(VElement.prototype, {
   }
 });
 
-VElement.e = function(name, layout, trans, children, key = void 0) {
+VElement.e = function(name, layout, trans, children, key) {
   return { name, layout, trans, children, key };
 };
 
@@ -251,12 +281,12 @@ VElement.transforms = {
   layout(config, style) {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
-    style.transform = `translate(${config.left}px, ${config.top}px) ${style.transform || ''}`;
+    style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
     if (!isUndefined(config.width)) {
-      style.width = config.width + 'px';
+      style.width = `${config.width | 0}px`;
     }
     if (!isUndefined(config.height)) {
-      style.height = config.height + 'px';
+      style.height = `${config.height | 0}px`;
     }
   },
 
@@ -275,6 +305,13 @@ VElement.transforms = {
       config = config.join(' ');
     }
     attr.class = config;
+  },
+
+  radius(config, style) {
+    if (isValidNum(config)) {
+      config += 'px';
+    }
+    style.borderRadius = config;
   }
 };
 

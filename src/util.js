@@ -1,12 +1,34 @@
-export var $ = (selector, context) => (context || document).querySelector(selector);
-export var $$ = (selector, context) => [].slice.call((context || document).querySelectorAll(selector));
-export var on = (element, event, handler) => element.addEventListener(event, handler);
-export var off = (element, event, handler) => element.removeEventListener(event, handler);
-export var isFunction = value => typeof value === 'function';
-export var isUndefined = value => typeof value === 'undefined';
-export var isArray = value => value instanceof Array;
-export var isString = value => typeof value === 'string';
-export var isValidNum = value => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
+export function $(selector, context) {
+  return (context || document).querySelector(selector);
+}
+
+export function $$(selector, context) {
+  return [].slice.call((context || document).querySelectorAll(selector));
+}
+
+export function on(element, event, handler) {
+  return element.addEventListener(event, handler);
+}
+
+export function off(element, event, handler) {
+  return element.removeEventListener(event, handler);
+}
+
+export function isFunction(value) {
+  return typeof value === 'function';
+}
+
+export function isUndefined(value) {
+  return typeof value === 'undefined';
+}
+
+export function isArray(value) {
+  return value instanceof Array;
+}
+
+export function isValidNum(value) {
+  return typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
+}
 
 export function assign(base) {
   var i, ii, j, source, keys;
