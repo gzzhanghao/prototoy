@@ -1,6 +1,6 @@
 import * as util from './util';
 
-var {assign, isUndefined, isFunction, isArray, isValidNum} = util;
+var {assign, isUndefined, isFunction, isArray} = util;
 
 function VElement(props) {
   var self = this;
@@ -49,8 +49,8 @@ function VElement(props) {
     [top]() {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[top])) {
-        var value = this.calc(this.props.layout[top]);
-        if (!isValidNum(value)) {
+        var value = +this.calc(this.props.layout[top]);
+        if (!isFinite(value)) {
           value = 0;
         }
         nextState[top] = value;
@@ -61,8 +61,8 @@ function VElement(props) {
     [height](optional) {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[height])) {
-        var value = this.calc(this.props.layout[height]);
-        if (!isValidNum(value) && !optional) {
+        var value = +this.calc(this.props.layout[height]);
+        if (!isFinite(value) && !optional) {
           value = this.getBCR()[height];
         }
         nextState[height] = value;
@@ -310,7 +310,7 @@ VElement.transforms = {
   },
 
   radius(config, style) {
-    if (isValidNum(config)) {
+    if (isFinite(config)) {
       config += 'px';
     }
     style.borderRadius = config;

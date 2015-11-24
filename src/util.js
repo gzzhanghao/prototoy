@@ -26,10 +26,6 @@ export function isArray(value) {
   return value instanceof Array;
 }
 
-export function isValidNum(value) {
-  return typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
-}
-
 export function assign(base) {
   var i, ii, j, source, keys;
   for (i = 1, ii = arguments.length; i < ii; i++) {
