@@ -26,6 +26,10 @@ export function isArray(value) {
   return value instanceof Array;
 }
 
+export function isFiniteNum(value) {
+  return isFinite(value) && !isNaN(parseFloat(value));
+}
+
 export function assign(base) {
   var i, ii, j, source, keys;
   for (i = 1, ii = arguments.length; i < ii; i++) {

@@ -1,6 +1,6 @@
 import * as util from './util';
 
-var {assign, isUndefined, isFunction, isArray} = util;
+var {assign, isUndefined, isFunction, isArray, isFiniteNum} = util;
 
 function VElement(props) {
   var self = this;
@@ -49,11 +49,11 @@ function VElement(props) {
     [top]() {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[top])) {
-        var value = +this.calc(this.props.layout[top]);
-        if (!isFinite(value)) {
+        var value = this.calc(this.props.layout[top]);
+        if (!isFiniteNum(value)) {
           value = 0;
         }
-        nextState[top] = value;
+        nextState[top] = +value;
       }
       return nextState[top];
     },
@@ -61,11 +61,14 @@ function VElement(props) {
     [height](optional) {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[height])) {
-        var value = +this.calc(this.props.layout[height]);
-        if (!isFinite(value) && !optional) {
+        var value = this.calc(this.props.layout[height]);
+        if (!isFiniteNum(value)) {
+          if (optional) {
+            return;
+          }
           value = this.getBCR()[height];
         }
-        nextState[height] = value;
+        nextState[height] = +value;
       }
       return nextState[height];
     },
@@ -284,10 +287,10 @@ VElement.transforms = {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
     style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
-    if (!isUndefined(config.width)) {
+    if (!isFiniteNum(config.width)) {
       style.width = `${config.width | 0}px`;
     }
-    if (!isUndefined(config.height)) {
+    if (!isFiniteNum(config.height)) {
       style.height = `${config.height | 0}px`;
     }
   },
@@ -310,8 +313,8 @@ VElement.transforms = {
   },
 
   radius(config, style) {
-    if (isFinite(config)) {
-      config += 'px';
+    if (isFiniteNum(config)) {
+      config = `${config | 0}px`;
     }
     style.borderRadius = config;
   }
