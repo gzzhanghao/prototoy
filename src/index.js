@@ -12,34 +12,34 @@ for (var i = 20; i >= 0; i--) {
 function e(name, props, children) {
   return {
     name, children,
+    layout: props.l || {},
     key: props.k || '',
-    attr: props.a || {},
-    prop: props.p || {},
-    style: props.s || {},
-    event: props.e || {}
+    trans: props.t || {}
   };
 }
 
-var virtual = new VElement(e('div', { a: { 'class': 'root container' } }, [
+var virtual = new VElement(
+  e('div', { a: { 'class': 'root container' } }, [
     () => elements.map(v => e('world', {
       k: v.key,
-      p: {
+      l: {
         top: $ => $.prev ? $.prev.bottom() + 20 : 0,
         left: $ => Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)),
         width: $ => $window.width - Math.abs(120 * Math.cos(($.top() + $mouse.y + $mouse.x) / 90)) - $.left(),
-        height: 20,
-        display: $ => $.top() > -$.height() && $.top() < $window.height
+        height: 20
       },
-      s: { background: 'lightblue' }
+      t: $ => ({
+        background: 'lightblue',
+        display: $.top() > -$.height() && $.top() < $window.height
+      })
     }, v.value))
-  ]
-));
+  ])
+);
 
 function frame() {
   virtual.update();
   requestAnimationFrame(frame);
 }
-
 requestAnimationFrame(frame);
 
 on(window, 'resize', () => $window = { width: window.innerWidth, height: window.innerHeight });

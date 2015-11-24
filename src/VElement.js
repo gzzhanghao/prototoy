@@ -1,44 +1,38 @@
 import VList from './VList';
 import * as util from './util';
 
-var {on, assign, isUndefined, isFunction, isArray} = util;
+var {on, assign, isUndefined, isFunction, isArray, isValidNum} = util;
 
-function VElement(properties) {
+function VElement(props) {
   var self = this;
 
-  self.properties = properties;
-  self.key = properties.key;
-  self.state = { attr: {}, prop: {}, style: {}, children: [] };
-  self.nextState = { attr: {}, prop: {}, style: {} };
-  self.data = properties.data || {};
+  self.props = props;
+  self.state = { attr: {}, style: {}, children: [] };
 
-  self.element = document.createElement(properties.name);
+  props.layout = props.layout || {};
 
-  // @todo dynamic binding event handler
-
-  var events = Object.keys(properties.event);
-  for (var i = events.length - 1; i >= 0; i--) {
-    on(self.element, events[i], properties.event[events[i]].bind(self, self));
-  }
-
+  self.element = document.createElement(props.name);
   self.style = self.element.style;
   self.elements = [self];
 
-  var children = properties.children;
+  var children = props.children;
 
   if (!isArray(children)) {
+    if (isFunction(children)) {
+      children = children();
+    }
     self.children = self.state.children = self.element.innerHTML = children + '';
     return;
   }
 
   children = self.state.children = children.map(child => {
     if (isFunction(child)) {
-      child = new VList();
+      child = new VList;
     } else {
       child = new VElement(child);
     }
-    child.parent = self;
     self.element.appendChild(child.element);
+    child.parent = self;
     return child;
   });
 }
@@ -47,32 +41,31 @@ function VElement(properties) {
   assign(VElement.prototype, {
 
     [top]() {
-      var nextState = this.nextState.prop;
+      var nextState = this.nextState.layout;
       if (isUndefined(nextState[top])) {
-        if (!isUndefined(this.properties.prop[top])) {
-          nextState[top] = this.getProperty('prop', top);
-        } else {
-          nextState[top] = 0;
+        var value = this.calc(this.props.layout[top]);
+        if (!isValidNum(value)) {
+          value = 0;
         }
+        nextState[top] = value;
       }
       return nextState[top];
     },
 
     [height](optional) {
-      var nextState = this.nextState.prop;
+      var nextState = this.nextState.layout;
       if (isUndefined(nextState[height])) {
-        if (!isUndefined(this.properties.prop[height])) {
-          nextState[height] = this.getProperty('prop', height);
-        } else if (!optional) {
-          var bcr = this.getBCR();
-          nextState[height] = bcr[bottom] - bcr[top];
+        var value = this.calc(this.props.layout[height]);
+        if (!isValidNum(value) && !optional) {
+          value = this.getBCR()[height];
         }
+        nextState[height] = value;
       }
       return nextState[height];
     },
 
     [bottom]() {
-      var nextState = this.nextState.prop;
+      var nextState = this.nextState.layout;
       if (isUndefined(nextState[bottom])) {
         nextState[bottom] = this[top]() + this[height]();
       }
@@ -91,50 +84,41 @@ assign(VElement.prototype, {
     sibling.parentNode.insertBefore(this.element, sibling);
   },
 
-  attr(key) {
-    if (!isUndefined(this.properties.attr[key])) {
-      return this.getProperty('attr', key);
-    }
-    var state = this.state.attr;
-    if (isUndefined(state[key])) {
-      state[key] = this.element.getAttribute(key);
-    }
-    return state[key];
-  },
-
-  update(properties) {
+  update(props) {
+    var i, j, keys, oriKeys, node, state, nextState, value, children;
     var nodes = [this];
-    var updateNodes = [this];
-    var i, j, keys, node, nextState, state, value, children;
 
-    if (properties) {
-      this.properties = properties;
-    }
+    this.props = props || this.props;
 
     // Update DOM structure
     for (i = 0; i < nodes.length; i++) {
       node = nodes[i];
-      state = node.state.children;
-      children = node.properties.children;
 
-      if (isUndefined(children)) {
-        continue;
-      }
+      node.nextState = { attr: {}, style: {}, layout: {} };
+
+      state = node.state.children;
+      children = node.props.children;
+
       if (!isArray(children)) {
+        if (isFunction(children)) {
+          children = children();
+        }
         children += '';
         if (state !== children) {
           node.children = node.state.children = node.element.innerHTML = children;
         }
         continue;
       }
-      for (j = state.length - 1; j >= 0; j--) {
-        if (state[j] instanceof VList) {
+
+      for (j = children.length - 1; j >= 0; j--) {
+        if (isFunction(children[j])) {
           state[j].update(children[j]);
         } else {
-          state[j].properties = children[j];
+          state[j].props = children[j];
         }
         nodes = nodes.concat(state[j].elements);
       }
+
       children = nodes[i].children = state.reduce((a, b) => a.concat(b.elements), []);
       for (j = children.length - 1; j >= 0; j--) {
         children[j].prev = children[j - 1];
@@ -143,40 +127,53 @@ assign(VElement.prototype, {
       }
     }
 
-    // Update attributes
+    // Apply transformations and update attributes
     for (i = nodes.length - 1; i >= 0; i--) {
       node = nodes[i];
-      state = node.state.attr;
-      keys = Object.keys(node.properties.attr);
+
+      nextState = node.nextState;
+
+      value = node.calc(node.props.trans);
+      keys = Object.keys(value);
       for (j = keys.length - 1; j >= 0; j--) {
-        value = node.getProperty('attr', keys[j]);
-        if (value !== false) {
-          value += '';
-          if (value !== state[keys[j]]) {
-            node.element.setAttribute(keys[j], value);
-            node.bcr = null;
-          }
-        } else if (state[keys[j]] === false) {
-          node.element.removeAttribute(keys[j]);
+        VElement.transforms[keys[j]](value[keys[j]], nextState.style, nextState.attr);
+      }
+      VElement.transforms.layout({
+        top: node.top(), left: node.left(),
+        width: node.width(true), height: node.height(true)
+      }, nextState.style, nextState.attr);
+
+      state = node.state.attr;
+      nextState = nextState.attr;
+
+      oriKeys = Object.keys(state);
+      keys = Object.keys(nextState);
+
+      for (j = oriKeys.length - 1; j >= 0; j--) {
+        if (keys.indexOf(oriKeys[j]) < 0) {
+          node.element.removeAttribute(oriKeys[j]);
           node.bcr = null;
         }
-        state[keys[j]] = value;
+      }
+
+      for (j = keys.length - 1; j >= 0; j--) {
+        if (state[keys[j]] !== nextState[keys[j]] + '') {
+          node.element.setAttribute(keys[j], state[keys[j]] = nextState[keys[j]] + '');
+          node.bcr = null;
+        }
       }
     }
 
+    nodes = [this];
+
     // Update style
-    for (i = 0; i < updateNodes.length; i++) {
-      node = updateNodes[i];
+    for (i = 0; i < nodes.length; i++) {
+      node = nodes[i];
 
-      keys = Object.keys(node.properties.style);
-      for (j = keys.length - 1; j >= 0; j--) {
-        node.getProperty('style', keys[j]);
-      }
-
-      nextState = node.nextState.style;
       state = node.state.style;
+      nextState = node.nextState.style;
 
-      if (nextState.display === 'none' || node.getProperty('prop', 'show') === false) {
+      if (nextState.display === 'none') {
         if (state.display !== 'none') {
           node.style.display = state.display = 'none';
           children = [node];
@@ -190,21 +187,16 @@ assign(VElement.prototype, {
         continue;
       }
 
-      nextState.display = nextState.display || 'block';
-      nextState.position = 'absolute';
-      nextState.top = nextState.left = 0;
-      nextState.transform = `translate(${node.left() | 0}px, ${node.top() | 0}px) ${nextState.transform || ''}`;
-
-      value = node.width(true);
-      if (!isUndefined(value)) {
-        nextState.width = `${value | 0}px`;
-      }
-      value = node.height(true);
-      if (!isUndefined(value)) {
-        nextState.height = `${value | 0}px`;
-      }
-
+      oriKeys = Object.keys(state);
       keys = Object.keys(nextState);
+
+      for (j = oriKeys.length - 1; j >= 0; j--) {
+        if (keys.indexOf(oriKeys[j]) < 0) {
+          node.style[oriKeys[j]] = '';
+          node.bcr = null;
+        }
+      }
+
       for (j = keys.length - 1; j >= 0; j--) {
         if (state[keys[j]] !== nextState[keys[j]] + '') {
           node.style[keys[j]] = state[keys[j]] = nextState[keys[j]] + '';
@@ -213,29 +205,16 @@ assign(VElement.prototype, {
       }
 
       if (isArray(node.children)) {
-        updateNodes = updateNodes.concat(node.children);
+        nodes = nodes.concat(node.children);
       }
-    }
-
-    // Clean up state
-    for (i = nodes.length - 1; i >= 0; i--) {
-      nodes[i].nextState = { attr: {}, prop: {}, style: {} };
     }
   },
 
-  getProperty(property, key) {
-    var nextState = this.nextState[property];
-    if (isUndefined(nextState[key])) {
-      var value = this.properties[property][key];
-      if (isFunction(value)) {
-        value = value.call(this, this);
-      }
-      if (isUndefined(value)) {
-        value = null;
-      }
-      nextState[key] = value;
+  calc(value) {
+    if (isFunction(value)) {
+      value = value.call(this, this);
     }
-    return nextState[key];
+    return value;
   },
 
   getBCR() {
@@ -247,5 +226,27 @@ assign(VElement.prototype, {
     return this.bcr;
   }
 });
+
+VElement.transforms = {
+  layout(config, style) {
+    style.position = style.position || 'absolute';
+    style.top = style.left = 0;
+    style.transform = `translate(${config.left}px, ${config.top}px) ${style.transform || ''}`;
+    if (!isUndefined(config.width)) {
+      style.width = config.width + 'px';
+    }
+    if (!isUndefined(config.height)) {
+      style.height = config.height + 'px';
+    }
+  },
+  background(config, style) {
+    style.background = config;
+  },
+  display(config, style) {
+    if (config === false) {
+      style.config = 'none';
+    }
+  }
+};
 
 export default VElement;

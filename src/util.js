@@ -5,6 +5,7 @@ export var off = (element, event, handler) => element.removeEventListener(event,
 export var isFunction = value => typeof value === 'function';
 export var isUndefined = value => typeof value === 'undefined';
 export var isArray = value => value instanceof Array;
+export var isValidNum = value => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
 
 export function assign(base) {
   var i, ii, j, source, keys;

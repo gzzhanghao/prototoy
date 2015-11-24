@@ -17,7 +17,7 @@ assign(VList.prototype, {
     var index = 0;
     var elements = this.elements;
     var parent = this.parent.element;
-    var keys = elements.map(child => child.key);
+    var keys = elements.map(child => child.props.key);
 
     this.elements = children.map(child => {
       let oriIdx = keys.indexOf(child.key, index);
