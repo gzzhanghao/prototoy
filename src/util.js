@@ -7,11 +7,11 @@ export function $$(selector, context) {
 }
 
 export function on(element, event, handler) {
-  return element.addEventListener(event, handler);
+  element.addEventListener(event, handler);
 }
 
 export function off(element, event, handler) {
-  return element.removeEventListener(event, handler);
+  element.removeEventListener(event, handler);
 }
 
 export function isFunction(value) {

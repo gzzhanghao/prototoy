@@ -98,74 +98,72 @@ assign(VElement.prototype, {
   },
 
   update(props) {
-    var i, j, keys, oriKeys, node, state, nextState, value, children, index, elements, parent;
     var nodes = [this];
 
     this.props = props || this.props;
 
     // Update DOM structure
-    for (i = 0; i < nodes.length; i++) {
-      node = nodes[i];
+    for (let i = 0; i < nodes.length; i++) {
+      let node = nodes[i];
 
       node.nextState = { attr: {}, style: {}, layout: {} };
 
-      state = node.state.children;
-      children = node.props.children;
+      let state = node.state.children;
+      let props = node.props.children;
+      let children = [];
 
-      if (isUndefined(children)) {
+      if (isUndefined(props)) {
         continue;
       }
 
-      if (!isArray(children)) {
-        if (isFunction(children)) {
-          children = children();
+      if (!isArray(props)) {
+        if (isFunction(props)) {
+          props = props();
         }
-        children += '';
-        if (state !== children) {
-          node.children = node.state.children = node.element.innerHTML = children;
+        props += '';
+        if (state !== props) {
+          node.children = node.state.children = node.element.innerHTML = props;
         }
         continue;
       }
 
-      for (j = children.length - 1; j >= 0; j--) {
-
-        if (!isFunction(children[j])) {
-          state[j].props = children[j];
-          nodes.push(state[j]);
+      for (let j = props.length - 1; j >= 0; j--) {
+        if (!isFunction(props[j])) {
+          state[j].props = props[j];
+          children.push(state[j]);
           continue;
         }
 
-        index = 0;
-        elements = state[j].elements;
-        parent = node.element;
-        keys = elements.map(child => child.props.key);
+        let index = 0;
+        let elements = state[j].elements;
+        let parent = node.element;
+        let keys = elements.map(child => child.props.key);
 
-        nodes = nodes.concat(state[j].elements = children[j]().map(child => {
+        children = children.concat(state[j].elements = props[j]().map(child => {
           let oriIdx = keys.indexOf(child.key, index);
-          let virtual;
           if (oriIdx < 0) {
-            virtual = new VElement(child);
-            if (index < elements.length) {
-              parent.insertBefore(virtual.element, elements[index].element);
-            } else {
-              parent.insertBefore(virtual.element, state[j].element);
-            }
-          } else {
-            while (index < oriIdx) {
-              parent.removeChild(elements[index++].element);
-            }
-            virtual = elements[index++];
-            virtual.props = child;
+            return new VElement(child).insertBefore(
+              index < elements.length ?
+                elements[index].element :
+                state[j].element
+            );
           }
-          return virtual;
+          while (index < oriIdx) {
+            parent.removeChild(elements[index++].element);
+          }
+          elements[index].props = child;
+          return elements[index++];
         }));
-        for (value = elements.length - 1; value >= index; value--) {
-          parent.removeChild(elements[value].element);
+
+        for (let k = elements.length - 1; k >= index; k--) {
+          parent.removeChild(elements[k].element);
         }
       }
 
-      children = nodes[i].children = state.reduce((a, b) => a.concat(b.elements), []);
-      for (j = children.length - 1; j >= 0; j--) {
+      nodes = nodes.concat(children);
+
+      nodes[i].children = children;
+      for (let j = children.length - 1; j >= 0; j--) {
         children[j].prev = children[j - 1];
         children[j].next = children[j + 1];
         children[j].parent = nodes[i];
@@ -173,38 +171,42 @@ assign(VElement.prototype, {
     }
 
     // Apply transformations and update attributes
-    for (i = nodes.length - 1; i >= 0; i--) {
-      node = nodes[i];
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      let node = nodes[i];
 
-      nextState = node.nextState;
+      {
+        let nextState = node.nextState;
 
-      value = node.calc(node.props.trans);
-      keys = Object.keys(value);
-      for (j = keys.length - 1; j >= 0; j--) {
-        VElement.transforms[keys[j]](value[keys[j]], nextState.style, nextState.attr);
-      }
-      VElement.transforms.layout({
-        top: node.top(), left: node.left(),
-        width: node.width(true), height: node.height(true)
-      }, nextState.style, nextState.attr);
-
-      state = node.state.attr;
-      nextState = nextState.attr;
-
-      oriKeys = Object.keys(state);
-      keys = Object.keys(nextState);
-
-      for (j = oriKeys.length - 1; j >= 0; j--) {
-        if (keys.indexOf(oriKeys[j]) < 0) {
-          node.element.removeAttribute(oriKeys[j]);
-          node.bcr = null;
+        let value = node.calc(node.props.trans);
+        let keys = Object.keys(value);
+        for (let j = keys.length - 1; j >= 0; j--) {
+          VElement.transforms[keys[j]](value[keys[j]], nextState.style, nextState.attr);
         }
+        VElement.transforms.layout({
+          top: node.top(), left: node.left(),
+          width: node.width(true), height: node.height(true)
+        }, nextState.style, nextState.attr);
       }
 
-      for (j = keys.length - 1; j >= 0; j--) {
-        if (state[keys[j]] !== nextState[keys[j]] + '') {
-          node.element.setAttribute(keys[j], state[keys[j]] = nextState[keys[j]] + '');
-          node.bcr = null;
+      {
+        let state = node.state.attr;
+        let nextState = nextState.attr;
+
+        let oriKeys = Object.keys(state);
+        let keys = Object.keys(nextState);
+
+        for (let j = oriKeys.length - 1; j >= 0; j--) {
+          if (keys.indexOf(oriKeys[j]) < 0) {
+            node.element.removeAttribute(oriKeys[j]);
+            node.bcr = null;
+          }
+        }
+
+        for (let j = keys.length - 1; j >= 0; j--) {
+          if (state[keys[j]] !== nextState[keys[j]] + '') {
+            node.element.setAttribute(keys[j], state[keys[j]] = nextState[keys[j]] + '');
+            node.bcr = null;
+          }
         }
       }
     }
@@ -212,17 +214,17 @@ assign(VElement.prototype, {
     nodes = [this];
 
     // Update style
-    for (i = 0; i < nodes.length; i++) {
-      node = nodes[i];
+    for (let i = 0; i < nodes.length; i++) {
+      let node = nodes[i];
 
-      state = node.state.style;
-      nextState = node.nextState.style;
+      let state = node.state.style;
+      let nextState = node.nextState.style;
 
       if (nextState.display === 'none') {
         if (state.display !== 'none') {
           node.style.display = state.display = 'none';
-          children = [node];
-          for (j = 0; j < children.length; j++) {
+          let children = [node];
+          for (let j = 0; j < children.length; j++) {
             children[j].bcr = { top: 0, right: 0, left: 0, bottom: 0, width: 0, height: 0 };
             if (isArray(children[j].children)) {
               children = children.concat(children[j].children);
@@ -232,17 +234,17 @@ assign(VElement.prototype, {
         continue;
       }
 
-      oriKeys = Object.keys(state);
-      keys = Object.keys(nextState);
+      let oriKeys = Object.keys(state);
+      let keys = Object.keys(nextState);
 
-      for (j = oriKeys.length - 1; j >= 0; j--) {
+      for (let j = oriKeys.length - 1; j >= 0; j--) {
         if (keys.indexOf(oriKeys[j]) < 0) {
           node.style[oriKeys[j]] = '';
           node.bcr = null;
         }
       }
 
-      for (j = keys.length - 1; j >= 0; j--) {
+      for (let j = keys.length - 1; j >= 0; j--) {
         if (state[keys[j]] !== nextState[keys[j]] + '') {
           node.style[keys[j]] = state[keys[j]] = nextState[keys[j]] + '';
           node.bcr = null;
