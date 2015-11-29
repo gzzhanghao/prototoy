@@ -1,4 +1,4 @@
-import * as util from './util';
+import util from './util';
 
 var {assign, isUndefined, isFunction, isArray, isFiniteNum} = util;
 
