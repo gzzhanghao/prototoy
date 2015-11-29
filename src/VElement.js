@@ -26,7 +26,7 @@ function VElement(opts) {
   }
 
   self.state.children = children.map(child => {
-    if (isFunction(child)) {
+    if (isArray(child) || isFunction(child)) {
       child = { element: document.createComment('list'), elements: [] };
     } else {
       child = new VElement(child);
@@ -131,7 +131,7 @@ assign(VElement.prototype, {
       }
 
       for (let j = opts.length - 1; j >= 0; j--) {
-        if (!isFunction(opts[j])) {
+        if (!isArray(opts[j]) && !isFunction(opts[j])) {
           state[j].opts = opts[j];
           children.push(state[j]);
           continue;
@@ -141,8 +141,13 @@ assign(VElement.prototype, {
         let elements = state[j].elements;
         let parent = node.element;
         let keys = elements.map(child => child.opts.key);
+        let child = opts[j];
 
-        children = children.concat(state[j].elements = opts[j]().map(child => {
+        if (isFunction(child)) {
+          child = child();
+        }
+
+        children = children.concat(state[j].elements = child.map(child => {
           let oriIdx = keys.indexOf(child.key, index);
           if (oriIdx < 0) {
             return new VElement(child).insertBefore(
@@ -258,6 +263,8 @@ assign(VElement.prototype, {
         nodes = nodes.concat(node.children);
       }
     }
+
+    return this;
   },
 
   calc(value) {

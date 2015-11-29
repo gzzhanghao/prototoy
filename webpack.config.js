@@ -1,10 +1,12 @@
+var webpack = require('webpack');
+
 module.exports = {
   entry: './src/VElement',
   output: {
     path: 'dist',
-    filename: 'bundle.min.js',
+    filename: 'layout.min.js',
     publicPath: '/dist/',
-    library: 'Layout'
+    library: 'VElement'
   },
   module: {
     loaders: [{
@@ -15,8 +17,14 @@ module.exports = {
       }
     }]
   },
-  devtool: '#source-map',
   resolve: {
     extensions: ['', '.js']
-  }
+  },
+  plugins: [
+    new webpack.optimize.UglifyJsPlugin({
+      compress: {
+        warnings: false
+      }
+    })
+  ]
 };
