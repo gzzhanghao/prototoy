@@ -2,18 +2,16 @@ import * as util from './util';
 
 var {assign, isUndefined, isFunction, isArray, isFiniteNum} = util;
 
-function VElement(props) {
+function VElement(opts) {
   var self = this;
 
-  self.props = props;
+  self.opts = opts;
   self.state = { attr: {}, style: {}, children: [] };
 
-  props.layout = props.layout || {};
-
-  self.element = document.createElement(props.name);
+  self.element = document.createElement(opts.name);
   self.style = self.element.style;
 
-  var children = props.children;
+  var children = opts.children;
 
   if (isUndefined(children)) {
     return;
@@ -27,7 +25,7 @@ function VElement(props) {
     return;
   }
 
-  children = self.state.children = children.map(child => {
+  self.state.children = children.map(child => {
     if (isFunction(child)) {
       child = { element: document.createComment('list'), elements: [] };
     } else {
@@ -39,17 +37,17 @@ function VElement(props) {
   });
 }
 
-[['top', 'height', 'bottom'], ['left', 'width', 'right']].forEach(props => {
-  var top = props[0];
-  var height = props[1];
-  var bottom = props[2];
+[['top', 'height', 'bottom'], ['left', 'width', 'right']].forEach(properties => {
+  var top = properties[0];
+  var height = properties[1];
+  var bottom = properties[2];
 
   assign(VElement.prototype, {
 
     [top]() {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[top])) {
-        var value = this.calc(this.props.layout[top]);
+        var value = this.calc(this.opts.layout[top]);
         if (!isFiniteNum(value)) {
           value = 0;
         }
@@ -61,7 +59,7 @@ function VElement(props) {
     [height](optional) {
       var nextState = this.nextState.layout;
       if (isUndefined(nextState[height])) {
-        var value = this.calc(this.props.layout[height]);
+        var value = this.calc(this.opts.layout[height]);
         if (!isFiniteNum(value)) {
           if (optional) {
             return;
@@ -100,10 +98,12 @@ assign(VElement.prototype, {
     return this;
   },
 
-  update(props) {
+  update(newOpts) {
     var nodes = [this];
 
-    this.props = props || this.props;
+    if (newOpts) {
+      this.opts = newOpts;
+    }
 
     // Update DOM structure
     for (let i = 0; i < nodes.length; i++) {
@@ -112,27 +112,27 @@ assign(VElement.prototype, {
       node.nextState = { attr: {}, style: {}, layout: {} };
 
       let state = node.state.children;
-      let props = node.props.children;
+      let opts = node.opts.children;
       let children = [];
 
-      if (isUndefined(props)) {
+      if (isUndefined(opts)) {
         continue;
       }
 
-      if (!isArray(props)) {
-        if (isFunction(props)) {
-          props = props();
+      if (!isArray(opts)) {
+        if (isFunction(opts)) {
+          opts = opts();
         }
-        props += '';
-        if (state !== props) {
-          node.children = node.state.children = node.element.innerHTML = props;
+        opts += '';
+        if (state !== opts) {
+          node.children = node.state.children = node.element.innerHTML = opts;
         }
         continue;
       }
 
-      for (let j = props.length - 1; j >= 0; j--) {
-        if (!isFunction(props[j])) {
-          state[j].props = props[j];
+      for (let j = opts.length - 1; j >= 0; j--) {
+        if (!isFunction(opts[j])) {
+          state[j].opts = opts[j];
           children.push(state[j]);
           continue;
         }
@@ -140,9 +140,9 @@ assign(VElement.prototype, {
         let index = 0;
         let elements = state[j].elements;
         let parent = node.element;
-        let keys = elements.map(child => child.props.key);
+        let keys = elements.map(child => child.opts.key);
 
-        children = children.concat(state[j].elements = props[j]().map(child => {
+        children = children.concat(state[j].elements = opts[j]().map(child => {
           let oriIdx = keys.indexOf(child.key, index);
           if (oriIdx < 0) {
             return new VElement(child).insertBefore(
@@ -154,7 +154,7 @@ assign(VElement.prototype, {
           while (index < oriIdx) {
             parent.removeChild(elements[index++].element);
           }
-          elements[index].props = child;
+          elements[index].opts = child;
           return elements[index++];
         }));
 
@@ -173,19 +173,19 @@ assign(VElement.prototype, {
       }
     }
 
-    // Apply transformations and update attributes
+    // Apply properties and update attributes
     for (let i = nodes.length - 1; i >= 0; i--) {
       let node = nodes[i];
 
       {
         let nextState = node.nextState;
 
-        let value = node.calc(node.props.trans);
+        let value = node.calc(node.opts.props);
         let keys = Object.keys(value);
         for (let j = keys.length - 1; j >= 0; j--) {
-          VElement.transforms[keys[j]](value[keys[j]], nextState.style, nextState.attr);
+          VElement.properties[keys[j]](value[keys[j]], nextState.style, nextState.attr);
         }
-        VElement.transforms.layout({
+        VElement.properties.layout({
           top: node.top(), left: node.left(),
           width: node.width(true), height: node.height(true)
         }, nextState.style, nextState.attr);
@@ -277,20 +277,20 @@ assign(VElement.prototype, {
   }
 });
 
-VElement.e = function(name, layout, trans, children, key) {
-  return { name, layout, trans, children, key };
+VElement.e = function(name, layout, props, children, key) {
+  return { name, layout, props, children, key };
 };
 
-VElement.transforms = {
+VElement.properties = {
 
   layout(config, style) {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
     style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
-    if (!isFiniteNum(config.width)) {
+    if (isFiniteNum(config.width)) {
       style.width = `${config.width | 0}px`;
     }
-    if (!isFiniteNum(config.height)) {
+    if (isFiniteNum(config.height)) {
       style.height = `${config.height | 0}px`;
     }
   },
@@ -309,7 +309,7 @@ VElement.transforms = {
     if (isArray(config)) {
       config = config.join(' ');
     }
-    attr.class = config;
+    attr['class'] = config;
   },
 
   radius(config, style) {
