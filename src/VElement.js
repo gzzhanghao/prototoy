@@ -296,7 +296,7 @@ VElement.properties = {
   },
 
   background(config, style) {
-    style.background = config;
+    style.background = config.color;
   },
 
   display(config, style) {

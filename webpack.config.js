@@ -1,5 +1,5 @@
 module.exports = {
-  entry: './src/index',
+  entry: './src/VElement',
   output: {
     path: 'dist',
     filename: 'bundle.min.js',
