@@ -1,19 +1,3 @@
-export function $(selector, context) {
-  return (context || document).querySelector(selector);
-}
-
-export function $$(selector, context) {
-  return [].slice.call((context || document).querySelectorAll(selector));
-}
-
-export function on(element, event, handler) {
-  element.addEventListener(event, handler);
-}
-
-export function off(element, event, handler) {
-  element.removeEventListener(event, handler);
-}
-
 export function isFunction(value) {
   return typeof value === 'function';
 }
@@ -31,11 +15,10 @@ export function isFiniteNum(value) {
 }
 
 export function assign(base) {
-  var i, ii, j, source, keys;
-  for (i = 1, ii = arguments.length; i < ii; i++) {
-    source = arguments[i];
-    keys = Object.keys(source);
-    for (j = keys.length - 1; j >= 0; j--) {
+  for (let i = 1, ii = arguments.length; i < ii; i++) {
+    let source = arguments[i];
+    let keys = Object.keys(source);
+    for (let j = keys.length - 1; j >= 0; j--) {
       base[keys[j]] = source[keys[j]];
     }
   }

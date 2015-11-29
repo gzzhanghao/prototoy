@@ -1,11 +1,19 @@
 {
   "name": "prototoy",
   "version": "0.0.1",
-  "description": "A rapid prototype tool",
-  "main": "index.js",
+  "description": "A simple virtual dom implementation for rapid prototyping",
+  "main": "src/VElement.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gzzhanghao/layout"
+  },
+  "keywords": [
+    "virtual-dom",
+    "layout"
+  ],
   "author": "Jason <jason.daurus@gmail.com>",
   "license": "MIT",
   "devDependencies": {

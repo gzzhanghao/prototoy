@@ -277,10 +277,6 @@ assign(VElement.prototype, {
   }
 });
 
-VElement.e = function(name, layout, props, children, key) {
-  return { name, layout, props, children, key };
-};
-
 VElement.properties = {
 
   layout(config, style) {
@@ -318,6 +314,10 @@ VElement.properties = {
     }
     style.borderRadius = config;
   }
+};
+
+VElement.e = function(name, layout, props, children, key) {
+  return { name, layout, props, children, key };
 };
 
 export default VElement;
