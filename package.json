@@ -1,5 +1,5 @@
 {
-  "name": "prototoy",
+  "name": "velement",
   "version": "0.0.1",
   "description": "A simple virtual dom implementation for rapid prototyping",
   "main": "src/VElement.js",
@@ -14,7 +14,8 @@
   },
   "keywords": [
     "virtual-dom",
-    "layout"
+    "layout",
+    "velement"
   ],
   "author": "Jason <jason.daurus@gmail.com>",
   "license": "MIT",
