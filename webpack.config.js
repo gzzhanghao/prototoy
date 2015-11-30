@@ -4,7 +4,7 @@ module.exports = {
   entry: './src/VElement',
   output: {
     path: 'dist',
-    filename: 'layout.min.js',
+    filename: 'VElement.min.js',
     publicPath: '/dist/',
     library: 'VElement'
   },

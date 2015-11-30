@@ -6,7 +6,8 @@
   "scripts": {
     "test": "karma start --single-run",
     "start": "karma start",
-    "build": "webpack"
+    "build": "webpack",
+    "prepublish": "webpack"
   },
   "repository": {
     "type": "git",
@@ -16,6 +17,10 @@
     "virtual-dom",
     "layout",
     "velement"
+  ],
+  "files": [
+    "dist",
+    "src"
   ],
   "author": "Jason <jason.daurus@gmail.com>",
   "license": "MIT",
