@@ -324,7 +324,11 @@ VElement.properties = {
 };
 
 VElement.e = function(name, layout, props, children, key) {
-  return { name, layout, props, children, key };
+  return {
+    name, children, key,
+    layout: layout || {},
+    props: props || {}
+  };
 };
 
 export default VElement;
