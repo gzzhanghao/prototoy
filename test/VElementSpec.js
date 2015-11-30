@@ -116,7 +116,7 @@ describe('VElement', () => {
 
   it('can get layout of the element', () => {
     createDOM(e('div', { top: 1, width: $ => $.top() + 1 }, $ => ({ className: `element-${$.top()}` })))
-    expect(container.firstChild.classList.contains('element-1'))
+    expect(container.firstChild.classList.contains('element-1')).toEqual(true)
     expect(container.firstChild.style.width).toEqual('2px')
   })
 
