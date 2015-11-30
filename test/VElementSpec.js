@@ -31,7 +31,7 @@ describe('VElement', () => {
   })
 
   it('can create an element with namespace', () => {
-    createDOM(e('http://www.w3.org/2000/svg:svg'))
+    createDOM(e('svg', {}, {}, null, null, 'http://www.w3.org/2000/svg'))
     expect(container.firstChild).toEqual(jasmine.any(SVGElement))
     expect(container.firstChild.namespaceURI).toEqual('http://www.w3.org/2000/svg')
   })
@@ -71,10 +71,10 @@ describe('VElement', () => {
   })
 
   it('can create element with text children', () => {
-    let virtual = createDOM(e('div', {}, {}, 'hello'))
-    expect(container.firstChild.textContent).toEqual('hello')
-    virtual.update(e('div', {}, {}, 'world'))
-    expect(container.firstChild.textContent).toEqual('world')
+    let virtual = createDOM(e('div', {}, {}, 0))
+    expect(container.firstChild.textContent).toEqual('0')
+    virtual.update(e('div', {}, {}, 1))
+    expect(container.firstChild.textContent).toEqual('1')
   })
 
   it('can create element with element children', () => {

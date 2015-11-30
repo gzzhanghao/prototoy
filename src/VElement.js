@@ -1,6 +1,6 @@
 import util from './util';
 
-var {assign, isUndefined, isFunction, isArray, isFiniteNum} = util;
+var {assign, isNull, isFunction, isArray, isFiniteNum} = util;
 
 function VElement(opts) {
   var self = this;
@@ -8,17 +8,16 @@ function VElement(opts) {
   self.opts = opts;
   self.state = { attr: {}, style: {}, children: [] };
 
-  let name = opts.name.split(':');
-  if (name.length > 1) {
-    self.element = document.createElementNS(name.slice(0, -1).join(':'), name.pop());
+  if (opts.namespace) {
+    self.element = document.createElementNS(opts.namespace, opts.name);
   } else {
-    self.element = document.createElement(name[0]);
+    self.element = document.createElement(opts.name);
   }
   self.style = self.element.style;
 
   var children = opts.children;
 
-  if (isUndefined(children)) {
+  if (isNull(children)) {
     return;
   }
 
@@ -51,7 +50,7 @@ function VElement(opts) {
 
     [top]() {
       var nextState = this.nextState.layout;
-      if (isUndefined(nextState[top])) {
+      if (isNull(nextState[top])) {
         var value = this.calc(this.opts.layout[top]);
         if (!isFiniteNum(value)) {
           value = 0;
@@ -63,7 +62,7 @@ function VElement(opts) {
 
     [height](optional) {
       var nextState = this.nextState.layout;
-      if (isUndefined(nextState[height])) {
+      if (isNull(nextState[height])) {
         var value = this.calc(this.opts.layout[height]);
         if (!isFiniteNum(value)) {
           if (optional) {
@@ -78,7 +77,7 @@ function VElement(opts) {
 
     [bottom]() {
       var nextState = this.nextState.layout;
-      if (isUndefined(nextState[bottom])) {
+      if (isNull(nextState[bottom])) {
         nextState[bottom] = this[top]() + this[height]();
       }
       return nextState[bottom];
@@ -120,7 +119,7 @@ assign(VElement.prototype, {
       let opts = node.opts.children;
       let children = [];
 
-      if (isUndefined(opts)) {
+      if (isNull(opts)) {
         continue;
       }
 
@@ -328,9 +327,9 @@ VElement.properties = {
   }
 };
 
-VElement.e = function(name, layout, props, children, key) {
+VElement.e = function(name, layout, props, children, key, namespace) {
   return {
-    name, children, key,
+    name, namespace, children, key,
     layout: layout || {},
     props: props || {}
   };

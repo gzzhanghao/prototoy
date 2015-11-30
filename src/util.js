@@ -4,8 +4,8 @@ export default {
     return typeof value === 'function';
   },
 
-  isUndefined(value) {
-    return typeof value === 'undefined';
+  isNull(value) {
+    return value === null || typeof value === 'undefined';
   },
 
   isArray(value) {
