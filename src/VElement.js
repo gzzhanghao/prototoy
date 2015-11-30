@@ -8,7 +8,12 @@ function VElement(opts) {
   self.opts = opts;
   self.state = { attr: {}, style: {}, children: [] };
 
-  self.element = document.createElement(opts.name);
+  let name = opts.name.split(':');
+  if (name.length > 1) {
+    self.element = document.createElementNS(name.slice(0, -1).join(':'), name.pop());
+  } else {
+    self.element = document.createElement(name[0]);
+  }
   self.style = self.element.style;
 
   var children = opts.children;
