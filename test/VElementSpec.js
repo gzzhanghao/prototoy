@@ -30,8 +30,14 @@ describe('VElement', () => {
     expect(container.children.length).toEqual(1)
   })
 
+  it('can create an element with namespace', () => {
+    createDOM(e('http://www.w3.org/2000/svg:svg'))
+    expect(container.firstChild).toEqual(jasmine.any(SVGElement))
+    expect(container.firstChild.namespaceURI).toEqual('http://www.w3.org/2000/svg')
+  })
+
   it('can create an element with layout', () => {
-    createDOM(e('div', { top: 1, left: 2, width: 3, height: 4 }, {}))
+    createDOM(e('div', { top: 1, left: 2, width: 3, height: 4 }))
     let style = container.firstChild.style
     expect(style.transform).toEqual('translate(2px, 1px)')
     expect(style.width).toEqual('3px')
@@ -40,7 +46,7 @@ describe('VElement', () => {
 
   it('can create an element with dynamic layout', () => {
     let width = 1
-    let virtual = createDOM(e('div', { width: () => width }, {}))
+    let virtual = createDOM(e('div', { width: () => width }))
     let style = container.firstChild.style
     expect(style.width).toEqual('1px')
     width = 2
@@ -73,9 +79,7 @@ describe('VElement', () => {
 
   it('can create element with element children', () => {
     let virtual = createDOM(
-      e('div', {}, {}, [
-        e('span', {}, {})
-      ])
+      e('div', {}, {}, [e('span')])
     )
     expect(container.firstChild.children.length).toEqual(1)
     expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
@@ -86,9 +90,7 @@ describe('VElement', () => {
     expect(container.firstChild.children.length).toEqual(0)
     virtual.update(
       e('div', {}, {}, [
-        [
-          e('span', {}, {})
-        ]
+        [e('span')]
       ])
     )
     expect(container.firstChild.children.length).toEqual(1)
@@ -121,7 +123,7 @@ describe('VElement', () => {
   it('can get layout of other elements', () => {
     createDOM(
       e('div', { top: 1, width: 2, height: $ => $.children[0].bottom() + 1 }, {}, [
-        e('span', { top: 1, width: $ => $.parent.width() - 1, height: 1 }, {})
+        e('span', { top: 1, width: $ => $.parent.width() - 1, height: 1 })
       ])
     )
     expect(container.firstChild.style.height).toEqual('3px')
