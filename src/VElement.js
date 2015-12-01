@@ -137,7 +137,7 @@ assign(VElement.prototype, {
       for (let j = opts.length - 1; j >= 0; j--) {
         if (!isArray(opts[j]) && !isFunction(opts[j])) {
           state[j].opts = opts[j];
-          children.push(state[j]);
+          children.unshift(state[j]);
           continue;
         }
 
@@ -151,7 +151,7 @@ assign(VElement.prototype, {
           child = child();
         }
 
-        children = children.concat(state[j].elements = child.map(child => {
+        state[j].elements = child.map(child => {
           let oriIdx = keys.indexOf(child.key, index);
           if (oriIdx < 0) {
             return new VElement(child).insertBefore(
@@ -165,7 +165,8 @@ assign(VElement.prototype, {
           }
           elements[index].opts = child;
           return elements[index++];
-        }));
+        });
+        children = state[j].elements.concat(children);
 
         for (let k = elements.length - 1; k >= index; k--) {
           parent.removeChild(elements[k].element);

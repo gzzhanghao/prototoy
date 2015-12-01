@@ -120,13 +120,23 @@ describe('VElement', () => {
     expect(container.firstChild.style.width).toEqual('2px')
   })
 
-  it('can get layout of other elements', () => {
+  it('can get layout of children', () => {
     createDOM(
       e('div', { top: 1, width: 2, height: $ => $.children[0].bottom() + 1 }, {}, [
-        e('span', { top: 1, width: $ => $.parent.width() - 1, height: 1 })
+        e('span', { top: 1, height: 1 })
       ])
     )
     expect(container.firstChild.style.height).toEqual('3px')
-    expect(container.firstChild.firstChild.style.width).toEqual('1px')
+  })
+
+  it('can get layout of siblings', () => {
+    createDOM(
+      e('div', {}, {}, [
+        e('span', { top: 1, height: $ => $.next.bottom() + 1 }),
+        e('span', { top: $ => $.prev.top() + 1, height: 1 })
+      ])
+    )
+    expect(container.firstChild.firstChild.style.height).toEqual('4px')
+    expect(container.firstChild.lastChild.style.transform).toEqual('translate(0px, 2px)')
   })
 })
