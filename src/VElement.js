@@ -214,16 +214,22 @@ assign(VElement.prototype, {
         for (let j = oriKeys.length - 1; j >= 0; j--) {
           let key = oriKeys[j];
           if (keys.indexOf(key) < 0) {
-            if (VElement.stringProperties.indexOf(keys) >= 0) {
+            node.bcr = null;
+            if (VElement.stringProperties.indexOf(key) >= 0) {
+              element[key] = '';
+              continue;
+            }
+            element[key] = void 0;
+            if (VElement.externProperties.indexOf(key) >= 0) {
+              continue;
+            }
+            let value = element[key];
+            if (typeof value === 'string' && value !== '') {
+              VElement.stringProperties.push(key);
               element[key] = '';
             } else {
-              element[key] = null;
-              let value = element[key];
-              if (typeof value === 'string' && value !== '') {
-                element[key] = '';
-              }
+              VElement.externProperties.push(key);
             }
-            node.bcr = null;
           }
         }
 
@@ -272,9 +278,10 @@ assign(VElement.prototype, {
       }
 
       for (let j = keys.length - 1; j >= 0; j--) {
-        nextState[keys[j]] = nextState[keys[j]] + ''
-        if (state[keys[j]] !== nextState[keys[j]]) {
-          node.style[keys[j]] = nextState[keys[j]];
+        let key = keys[j];
+        nextState[key] = nextState[key] + ''
+        if (state[key] !== nextState[key]) {
+          node.style[key] = nextState[key];
           node.bcr = null;
         }
       }
@@ -341,6 +348,7 @@ VElement.properties = {
 };
 
 VElement.stringProperties = ['className', 'innerHTML', 'innerText'];
+VElement.externProperties = [];
 
 VElement.e = function(name, layout, props, children, key, namespace) {
   return {
