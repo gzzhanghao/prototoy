@@ -76,6 +76,13 @@ describe('VElement', () => {
     expect(container.firstChild.innerHTML).toEqual('<b>world</b>')
   })
 
+  it('can remove properties', () => {
+    let virtual = createDOM(e('div', {}, { className: { list: 'foo' }, content: { text: 'hello' } }))
+    virtual.update(e('div'))
+    expect(container.firstChild.innerHTML).toEqual('')
+    expect(container.firstChild.className).toEqual('')
+  })
+
   it('can create element with element children', () => {
     let virtual = createDOM(
       e('div', {}, {}, [e('span')])
