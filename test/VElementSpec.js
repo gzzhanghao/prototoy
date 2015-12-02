@@ -55,26 +55,25 @@ describe('VElement', () => {
   })
 
   it('can update opts with update method', () => {
-    let virtual = createDOM(e('div', { width: 1 }, {}))
+    let virtual = createDOM(e('div', { width: 1 }))
     let style = container.firstChild.style
     expect(style.width).toEqual('1px')
-    virtual.update(e('div', { width: 2 }, {}))
+    virtual.update(e('div', { width: 2 }))
     expect(style.width).toEqual('2px')
   })
 
-  it('can create an element with properties', () => {
-    let virtual = createDOM(e('div', {}, { background: { color: 'red' } }))
-    let style = container.firstChild.style
-    expect(style.background).toEqual('red')
-    virtual.update(e('div', {}, { background: { color: 'blue' } }))
-    expect(style.background).toEqual('blue')
+  it('can create an element with attributes', () => {
+    let virtual = createDOM(e('div', {}, { className: { list: 'hello' } }))
+    expect(container.firstChild.className).toEqual('hello')
+    virtual.update(e('div', {}, { className: { list: 'world' } }))
+    expect(container.firstChild.className).toEqual('world')
   })
 
-  it('can create element with text children', () => {
-    let virtual = createDOM(e('div', {}, {}, 0))
-    expect(container.firstChild.textContent).toEqual('0')
-    virtual.update(e('div', {}, {}, 1))
-    expect(container.firstChild.textContent).toEqual('1')
+  it('can create an element with properties', () => {
+    let virtual = createDOM(e('div', {}, { content: { text: 'hello' } }))
+    expect(container.firstChild.textContent).toEqual('hello')
+    virtual.update(e('div', {}, { content: { html: '<b>world</b>' } }))
+    expect(container.firstChild.innerHTML).toEqual('<b>world</b>')
   })
 
   it('can create element with element children', () => {
@@ -101,9 +100,7 @@ describe('VElement', () => {
     let elements = []
     let virtual = createDOM(
       e('div', {}, {}, [
-        () => elements.map(element => (
-          e('span', {}, {}, element)
-        ))
+        () => elements.map(element => e('span'))
       ])
     )
     expect(container.firstChild.children.length).toEqual(0)
@@ -114,9 +111,19 @@ describe('VElement', () => {
     expect(container.firstChild.children[1]).toEqual(jasmine.any(HTMLSpanElement))
   })
 
+  it('can update children with update', () => {
+    let virtual = createDOM(e('div', {}, {}, [[]]))
+    expect(container.firstChild.children.length).toEqual(0)
+    virtual.update(e('div', {}, {}, [[e('span')]]))
+    expect(container.firstChild.children.length).toEqual(1)
+    expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
+  })
+
   it('can get layout of the element', () => {
-    createDOM(e('div', { top: 1, width: $ => $.top() + 1 }, $ => ({ className: `element-${$.top()}` })))
-    expect(container.firstChild.classList.contains('element-1')).toEqual(true)
+    createDOM(
+      e('div', { top: 1, width: $ => $.top() + 1 }, $ => ({ content: { text: $.top() } }))
+    )
+    expect(container.firstChild.innerText).toEqual('1')
     expect(container.firstChild.style.width).toEqual('2px')
   })
 

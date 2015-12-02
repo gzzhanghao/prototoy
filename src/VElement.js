@@ -6,7 +6,7 @@ function VElement(opts) {
   var self = this;
 
   self.opts = opts;
-  self.state = { attr: {}, style: {}, children: [] };
+  self.state = { attr: {}, style: {}, prop: {}, children: [] };
 
   if (opts.namespace) {
     self.element = document.createElementNS(opts.namespace, opts.name);
@@ -17,15 +17,7 @@ function VElement(opts) {
 
   var children = opts.children;
 
-  if (isNull(children)) {
-    return;
-  }
-
   if (!isArray(children)) {
-    if (isFunction(children)) {
-      children = children();
-    }
-    self.children = self.state.children = self.element.innerHTML = children + '';
     return;
   }
 
@@ -113,24 +105,15 @@ assign(VElement.prototype, {
     for (let i = 0; i < nodes.length; i++) {
       let node = nodes[i];
 
-      node.nextState = { attr: {}, style: {}, layout: {} };
+      node.nextState = { attr: {}, style: {}, prop: {}, layout: {} };
 
       let state = node.state.children;
       let opts = node.opts.children;
       let children = [];
 
-      if (isNull(opts)) {
-        continue;
-      }
-
       if (!isArray(opts)) {
-        if (isFunction(opts)) {
-          opts = opts();
-        }
-        opts += '';
-        if (state !== opts) {
-          node.children = node.state.children = node.element.innerHTML = opts;
-        }
+        let prop = node.state.prop;
+        node.children = prop.innerHTML || prop.innerText;
         continue;
       }
 
@@ -174,8 +157,8 @@ assign(VElement.prototype, {
       }
 
       nodes = nodes.concat(children);
-
       nodes[i].children = children;
+
       for (let j = children.length - 1; j >= 0; j--) {
         children[j].prev = children[j - 1];
         children[j].next = children[j + 1];
@@ -193,17 +176,17 @@ assign(VElement.prototype, {
         let value = node.calc(node.opts.props);
         let keys = Object.keys(value);
         for (let j = keys.length - 1; j >= 0; j--) {
-          VElement.properties[keys[j]](value[keys[j]], nextState.style, nextState.attr);
+          VElement.properties[keys[j]](value[keys[j]], nextState);
         }
         VElement.properties.layout({
           top: node.top(), left: node.left(),
           width: node.width(true), height: node.height(true)
-        }, nextState.style, nextState.attr);
+        }, nextState);
       }
 
       {
         let state = node.state.attr;
-        let nextState = nextState.attr;
+        let nextState = node.nextState.attr;
 
         let oriKeys = Object.keys(state);
         let keys = Object.keys(nextState);
@@ -216,8 +199,30 @@ assign(VElement.prototype, {
         }
 
         for (let j = keys.length - 1; j >= 0; j--) {
-          if (state[keys[j]] !== nextState[keys[j]] + '') {
-            node.element.setAttribute(keys[j], state[keys[j]] = nextState[keys[j]] + '');
+          if (state[keys[j]] !== '' + nextState[keys[j]]) {
+            node.element.setAttribute(keys[j], state[keys[j]] = '' + nextState[keys[j]]);
+            node.bcr = null;
+          }
+        }
+      }
+
+      {
+        let state = node.state.prop;
+        let nextState = node.nextState.prop;
+
+        let oriKeys = Object.keys(state);
+        let keys = Object.keys(nextState);
+
+        for (let j = oriKeys.length - 1; j >= 0; j--) {
+          if (keys.indexOf(oriKeys[j]) < 0) {
+            delete node.element[oriKeys[j]];
+            node.bcr = null;
+          }
+        }
+
+        for (let j = keys.length - 1; j >= 0; j--) {
+          if (state[keys[j]] !== nextState[keys[j]]) {
+            node.element[keys[j]] = state[keys[j]] = nextState[keys[j]];
             node.bcr = null;
           }
         }
@@ -291,7 +296,7 @@ assign(VElement.prototype, {
 
 VElement.properties = {
 
-  layout(config, style) {
+  layout(config, { style }) {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
     style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
@@ -303,28 +308,25 @@ VElement.properties = {
     }
   },
 
-  background(config, style) {
-    style.background = config.color;
+  className(config, { attr }) {
+    let list = config.list;
+    if (!isArray(list)) {
+      list = [list];
+    }
+    attr['class'] = list.map(v => {
+      if (typeof v === 'object' && v !== null) {
+        v = Object.keys(v).filter(k => v[k]);
+      }
+      return v;
+    }).join(' ')
   },
 
-  display(config, style) {
-    if (config === false) {
-      style.display = 'none';
+  content(config, { prop }) {
+    if (!isNull(config.html)) {
+      prop.innerHTML = '' + config.html;
+    } else if (!isNull(config.text)) {
+      prop.innerText = '' + config.text;
     }
-  },
-
-  className(config, style, attr) {
-    if (isArray(config)) {
-      config = config.join(' ');
-    }
-    attr['class'] = config;
-  },
-
-  radius(config, style) {
-    if (isFiniteNum(config)) {
-      config = `${config | 0}px`;
-    }
-    style.borderRadius = config;
   }
 };
 
