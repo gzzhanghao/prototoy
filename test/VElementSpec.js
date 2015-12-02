@@ -8,6 +8,11 @@ describe('VElement', () => {
   beforeEach(() => {
     container = document.createElement('div')
     container.innerHTML = '<span></span>'
+    document.body.appendChild(container)
+  })
+
+  afterEach(() => {
+    document.body.removeChild(container)
   })
 
   function createDOM(opts) {
@@ -165,5 +170,41 @@ describe('VElement', () => {
     visible = true
     virtual.update()
     expect(container.firstChild.firstChild.innerText).toEqual('true')
+  })
+
+  describe('layout', () => {
+
+    it('can change automatically with visibility', () => {
+      createDOM(
+        e('div', { visible: false }, {}, [
+          e('div', { top: 1 }, $ => ({ content: { text: $.top() }}))
+        ])
+      )
+      expect(container.firstChild.firstChild.innerText).toEqual('0')
+    })
+
+    it('can get from BCR when not set', () => {
+      createDOM(
+        e('div', {}, {}, [
+          e('div', {}, { content: { text: 'foo' } }),
+          e('div', {}, $ => ({ content: { text: $.prev.height() }}))
+        ])
+      )
+      expect(container.firstChild.lastChild.innerText).toBeGreaterThan(0)
+    })
+
+    it('can get BCR right after update', () => {
+      let content = ''
+      let virtual = createDOM(
+        e('div', {}, {}, [
+          e('div', {}, $ => ({ content: { text: content } })),
+          e('div', {}, $ => ({ content: { text: $.prev.height() }}))
+        ])
+      )
+      expect(container.firstChild.lastChild.innerText).toEqual('0')
+      content = 'foo'
+      virtual.update()
+      expect(container.firstChild.lastChild.innerText).toBeGreaterThan(0)
+    })
   })
 })

@@ -7,6 +7,8 @@ const STATUS_RUNNING = 1;
 const STATUS_READY = 2;
 const STATUS_FINISH = 3;
 
+const EMPTY_BCR = { top: 0, right: 0, left: 0, bottom: 0, width: 0, height: 0 };
+
 function VElement(opts) {
   let self = this;
 
@@ -110,11 +112,10 @@ assign(VElement.prototype, {
       if (isNull(value)) {
         value = true;
       }
-      value = !!value;
-      nextState.visible = value;
-    }
-    if (value && this.parent) {
-      return this.parent.visible();
+      value = nextState.visible = !!value;
+      if (value && this.parent) {
+        value = nextState.visible = this.parent.visible();
+      }
     }
     return value;
   },
@@ -188,91 +189,7 @@ assign(VElement.prototype, {
 
     // Apply properties and update attributes
     for (let i = nodes.length - 1; i >= 0; i--) {
-      let node = nodes[i];
-
-      node.status = STATUS_RUNNING;
-      {
-        let nextState = node.nextState;
-
-        let value = node.calc(node.opts.props);
-        let keys = Object.keys(value);
-        for (let j = keys.length - 1; j >= 0; j--) {
-          VElement.properties[keys[j]](value[keys[j]], nextState);
-        }
-        VElement.properties.layout({
-          top: node.top(), left: node.left(),
-          width: node.width(true), height: node.height(true),
-          visible: node.visible()
-        }, nextState);
-      }
-      node.status = STATUS_READY;
-
-      let element = node.element;
-
-      {
-        let state = node.state.attr;
-        let nextState = node.nextState.attr;
-
-        node.state.attr = node.nextState.attr;
-
-        let oriKeys = Object.keys(state);
-        let keys = Object.keys(nextState);
-
-        for (let j = oriKeys.length - 1; j >= 0; j--) {
-          if (keys.indexOf(oriKeys[j]) < 0) {
-            element.removeAttribute(oriKeys[j]);
-            node.bcr = null;
-          }
-        }
-
-        for (let j = keys.length - 1; j >= 0; j--) {
-          let key = keys[j];
-          nextState[key] = nextState[key] + '';
-          if (state[key] !== nextState[key]) {
-            element.setAttribute(key, nextState[key]);
-            node.bcr = null;
-          }
-        }
-      }
-
-      {
-        let state = node.state.prop;
-        let nextState = node.nextState.prop;
-
-        node.state.prop = node.nextState.prop;
-
-        let oriKeys = Object.keys(state);
-        let keys = Object.keys(nextState);
-
-        for (let j = oriKeys.length - 1; j >= 0; j--) {
-          let key = oriKeys[j];
-          if (keys.indexOf(key) < 0) {
-            node.bcr = null;
-            if (VElement.stringProperties.indexOf(key) >= 0) {
-              element[key] = '';
-              continue;
-            }
-            element[key] = void 0;
-            if (VElement.externProperties.indexOf(key) >= 0) {
-              continue;
-            }
-            let value = element[key];
-            if (typeof value === 'string' && value !== '') {
-              VElement.stringProperties.push(key);
-              element[key] = '';
-            } else {
-              VElement.externProperties.push(key);
-            }
-          }
-        }
-
-        for (let j = keys.length - 1; j >= 0; j--) {
-          if (state[keys[j]] !== nextState[keys[j]]) {
-            element[keys[j]] = nextState[keys[j]];
-            node.bcr = null;
-          }
-        }
-      }
+      nodes[i].applyProps();
     }
 
     nodes = [this];
@@ -281,42 +198,17 @@ assign(VElement.prototype, {
     for (let i = 0; i < nodes.length; i++) {
       let node = nodes[i];
 
-      let state = node.state.style;
-      let nextState = node.nextState.style;
+      if (node.status !== STATUS_FINISH) {
+        let state = node.state.style;
 
-      node.state.style = node.nextState.style;
-
-      if (nextState.display === 'none') {
-        if (state.display !== 'none') {
-          node.style.display = state.display = 'none';
-          let children = [node];
-          for (let j = 0; j < children.length; j++) {
-            children[j].bcr = { top: 0, right: 0, left: 0, bottom: 0, width: 0, height: 0 };
-            if (isArray(children[j].children)) {
-              children = children.concat(children[j].children);
-            }
+        if (node.nextState.style.display === 'none') {
+          if (state.display !== 'none') {
+            node.style.display = state.display = 'none';
           }
+          continue;
         }
-        continue;
-      }
 
-      let oriKeys = Object.keys(state);
-      let keys = Object.keys(nextState);
-
-      for (let j = oriKeys.length - 1; j >= 0; j--) {
-        if (keys.indexOf(oriKeys[j]) < 0) {
-          node.style[oriKeys[j]] = '';
-          node.bcr = null;
-        }
-      }
-
-      for (let j = keys.length - 1; j >= 0; j--) {
-        let key = keys[j];
-        nextState[key] = nextState[key] + ''
-        if (state[key] !== nextState[key]) {
-          node.style[key] = nextState[key];
-          node.bcr = null;
-        }
+        node.applyStyle();
       }
 
       if (isArray(node.children)) {
@@ -327,20 +219,150 @@ assign(VElement.prototype, {
     return this;
   },
 
-  calc(value) {
-    if (isFunction(value)) {
-      value = value.call(this, this);
-    }
-    return value;
-  },
-
   getBCR() {
+    if (!this.visible()) {
+      return this.bcr = EMPTY_BCR;
+    }
+    this.applyProps();
+    this.applyStyle();
     let bcr = this.bcr;
     if (!bcr) {
       bcr = this.element.getBoundingClientRect();
       this.bcr = { width: bcr.right - bcr.left, height: bcr.bottom - bcr.top, top: bcr.top, right: bcr.right, left: bcr.left, bottom: bcr.bottom };
     }
     return this.bcr;
+  },
+
+  applyProps() {
+    if (this.status !== STATUS_PENDING) {
+      return;
+    }
+
+    let self = this;
+    let element = self.element;
+
+    self.status = STATUS_RUNNING;
+
+    {
+      let nextState = self.nextState;
+
+      let value = self.calc(self.opts.props);
+      let keys = Object.keys(value);
+      for (let j = keys.length - 1; j >= 0; j--) {
+        VElement.properties[keys[j]](value[keys[j]], nextState);
+      }
+      VElement.properties.layout({
+        top: self.top(), left: self.left(),
+        width: self.width(true), height: self.height(true),
+        visible: self.visible()
+      }, nextState);
+    }
+
+    self.status = STATUS_READY;
+
+    {
+      let state = self.state.attr;
+      let nextState = self.nextState.attr;
+
+      self.state.attr = self.nextState.attr;
+
+      let oriKeys = Object.keys(state);
+      let keys = Object.keys(nextState);
+
+      for (let j = oriKeys.length - 1; j >= 0; j--) {
+        if (keys.indexOf(oriKeys[j]) < 0) {
+          element.removeAttribute(oriKeys[j]);
+          self.bcr = null;
+        }
+      }
+
+      for (let j = keys.length - 1; j >= 0; j--) {
+        let key = keys[j];
+        nextState[key] = nextState[key] + '';
+        if (state[key] !== nextState[key]) {
+          element.setAttribute(key, nextState[key]);
+          self.bcr = null;
+        }
+      }
+    }
+
+    {
+      let state = self.state.prop;
+      let nextState = self.nextState.prop;
+
+      self.state.prop = self.nextState.prop;
+
+      let oriKeys = Object.keys(state);
+      let keys = Object.keys(nextState);
+
+      for (let j = oriKeys.length - 1; j >= 0; j--) {
+        let key = oriKeys[j];
+        if (keys.indexOf(key) < 0) {
+          self.bcr = null;
+          if (VElement.strProps.indexOf(key) >= 0) {
+            element[key] = '';
+            continue;
+          }
+          element[key] = void 0;
+          if (VElement.extProps.indexOf(key) >= 0) {
+            continue;
+          }
+          let value = element[key];
+          if (typeof value === 'string' && value !== '') {
+            VElement.strProps.push(key);
+            element[key] = '';
+          } else {
+            VElement.extProps.push(key);
+          }
+        }
+      }
+
+      for (let j = keys.length - 1; j >= 0; j--) {
+        if (state[keys[j]] !== nextState[keys[j]]) {
+          element[keys[j]] = nextState[keys[j]];
+          self.bcr = null;
+        }
+      }
+    }
+  },
+
+  applyStyle() {
+    if (this.status !== STATUS_READY) {
+      return;
+    }
+
+    let state = this.state.style;
+    let nextState = this.nextState.style;
+    let style = this.style;
+
+    let oriKeys = Object.keys(state);
+    let keys = Object.keys(nextState);
+
+    this.status = STATUS_FINISH;
+    this.state.style = this.nextState.style;
+
+    for (let j = oriKeys.length - 1; j >= 0; j--) {
+      if (keys.indexOf(oriKeys[j]) < 0) {
+        style[oriKeys[j]] = '';
+        this.bcr = null;
+      }
+    }
+
+    for (let j = keys.length - 1; j >= 0; j--) {
+      let key = keys[j];
+      nextState[key] = nextState[key] + ''
+      if (state[key] !== nextState[key]) {
+        style[key] = nextState[key];
+        this.bcr = null;
+      }
+    }
+  },
+
+  calc(value) {
+    if (isFunction(value)) {
+      value = value.call(this, this);
+    }
+    return value;
   }
 });
 
@@ -383,8 +405,8 @@ VElement.properties = {
   }
 };
 
-VElement.stringProperties = ['className', 'innerHTML', 'innerText'];
-VElement.externProperties = [];
+VElement.strProps = ['className', 'innerHTML', 'innerText'];
+VElement.extProps = [];
 
 VElement.e = function(name, layout, props, children, key, namespace) {
   return {
