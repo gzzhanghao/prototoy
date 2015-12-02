@@ -102,9 +102,6 @@ assign(VElement.prototype, {
   },
 
   visible() {
-    if (this.parent && !this.parent.visible()) {
-      return false;
-    }
     let nextState = this.nextState.layout;
     let value = nextState.visible;
     if (isNull(value)) {
@@ -115,6 +112,9 @@ assign(VElement.prototype, {
       }
       value = !!value;
       nextState.visible = value;
+    }
+    if (value && this.parent) {
+      return this.parent.visible();
     }
     return value;
   },
@@ -130,6 +130,7 @@ assign(VElement.prototype, {
     for (let i = 0; i < nodes.length; i++) {
       let node = nodes[i];
 
+      node.status = STATUS_PENDING;
       node.nextState = { attr: {}, style: {}, prop: {}, layout: {} };
 
       let state = node.state.children;
@@ -189,6 +190,7 @@ assign(VElement.prototype, {
     for (let i = nodes.length - 1; i >= 0; i--) {
       let node = nodes[i];
 
+      node.status = STATUS_RUNNING;
       {
         let nextState = node.nextState;
 
@@ -203,6 +205,7 @@ assign(VElement.prototype, {
           visible: node.visible()
         }, nextState);
       }
+      node.status = STATUS_READY;
 
       let element = node.element;
 
