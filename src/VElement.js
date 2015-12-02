@@ -17,10 +17,6 @@ function VElement(opts) {
 
   var children = opts.children;
 
-  if (!isArray(children)) {
-    return;
-  }
-
   self.state.children = children.map(child => {
     if (isArray(child) || isFunction(child)) {
       child = { element: document.createComment('list'), elements: [] };
@@ -110,12 +106,6 @@ assign(VElement.prototype, {
       let state = node.state.children;
       let opts = node.opts.children;
       let children = [];
-
-      if (!isArray(opts)) {
-        let prop = node.state.prop;
-        node.children = prop.innerHTML || prop.innerText;
-        continue;
-      }
 
       for (let j = opts.length - 1; j >= 0; j--) {
         if (!isArray(opts[j]) && !isFunction(opts[j])) {
@@ -332,10 +322,10 @@ VElement.properties = {
 
 VElement.e = function(name, layout, props, children, key, namespace) {
   return {
-    name, children,
-    key, namespace,
+    name, key, namespace,
     layout: layout || {},
-    props: props || {}
+    props: props || {},
+    children: children || []
   };
 };
 
