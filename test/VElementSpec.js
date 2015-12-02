@@ -153,4 +153,17 @@ describe('VElement', () => {
     expect(container.firstChild.firstChild.style.height).toEqual('4px')
     expect(container.firstChild.lastChild.style.transform).toEqual('translate(0px, 2px)')
   })
+
+  it('can get visibility of element', () => {
+    let visible = false
+    let virtual = createDOM(
+      e('div', { visible: () => visible }, {}, [
+        e('div', {}, $ => ({ content: { text: $.visible() } }))
+      ])
+    )
+    expect(container.firstChild.firstChild.innerText).toEqual('false')
+    visible = true
+    virtual.update()
+    expect(container.firstChild.firstChild.innerText).toEqual('true')
+  })
 })

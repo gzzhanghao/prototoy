@@ -2,6 +2,11 @@ import util from './util';
 
 let {assign, isNull, isFunction, isArray, isFiniteNum} = util;
 
+const STATUS_PENDING = 0;
+const STATUS_RUNNING = 1;
+const STATUS_READY = 2;
+const STATUS_FINISH = 3;
+
 function VElement(opts) {
   let self = this;
 
@@ -90,6 +95,23 @@ assign(VElement.prototype, {
     return this;
   },
 
+  visible() {
+    let nextState = this.nextState.layout;
+    let value = nextState.visible;
+    if (isNull(value)) {
+      value = this.calc(this.opts.layout.visible);
+      if (isNull(value)) {
+        value = true;
+      }
+      value = !!value;
+      nextState.visible = value;
+    }
+    if (this.parent) {
+      value = value && this.parent.visible();
+    }
+    return value;
+  },
+
   update(newOpts) {
     let nodes = [this];
 
@@ -170,7 +192,8 @@ assign(VElement.prototype, {
         }
         VElement.properties.layout({
           top: node.top(), left: node.left(),
-          width: node.width(true), height: node.height(true)
+          width: node.width(true), height: node.height(true),
+          visible: node.visible()
         }, nextState);
       }
 
@@ -322,6 +345,9 @@ VElement.properties = {
     }
     if (isFiniteNum(config.height)) {
       style.height = `${config.height | 0}px`;
+    }
+    if (!config.visible) {
+      style.display = 'none';
     }
   },
 
