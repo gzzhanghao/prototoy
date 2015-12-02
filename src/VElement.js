@@ -42,6 +42,9 @@ function VElement(opts) {
   assign(VElement.prototype, {
 
     [top]() {
+      if (!this.visible()) {
+        return 0;
+      }
       let nextState = this.nextState.layout;
       if (isNull(nextState[top])) {
         let value = this.calc(this.opts.layout[top]);
@@ -54,6 +57,9 @@ function VElement(opts) {
     },
 
     [height](optional) {
+      if (!this.visible()) {
+        return 0;
+      }
       let nextState = this.nextState.layout;
       if (isNull(nextState[height])) {
         let value = this.calc(this.opts.layout[height]);
@@ -96,18 +102,19 @@ assign(VElement.prototype, {
   },
 
   visible() {
+    if (this.parent && !this.parent.visible()) {
+      return false;
+    }
     let nextState = this.nextState.layout;
     let value = nextState.visible;
     if (isNull(value)) {
+      nextState.visible = true;
       value = this.calc(this.opts.layout.visible);
       if (isNull(value)) {
         value = true;
       }
       value = !!value;
       nextState.visible = value;
-    }
-    if (this.parent) {
-      value = value && this.parent.visible();
     }
     return value;
   },
