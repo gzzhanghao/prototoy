@@ -314,7 +314,7 @@ VElement.properties = {
       list = [list];
     }
     attr['class'] = list.map(v => {
-      if (typeof v === 'object' && v !== null) {
+      if (typeof v === 'object' && !isNull(v)) {
         v = Object.keys(v).filter(k => v[k]);
       }
       return v;
@@ -330,8 +330,13 @@ VElement.properties = {
   }
 };
 
-VElement.e = function(name, layout = {}, props = {}, children = null, key = null, namespace = null) {
-  return { name, layout, props, children, key, namespace };
+VElement.e = function(name, layout, props, children, key, namespace) {
+  return {
+    name, children,
+    key, namespace,
+    layout: layout || {},
+    props: props || {}
+  };
 };
 
 export default VElement;
