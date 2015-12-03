@@ -366,19 +366,33 @@ assign(VElement.prototype, {
   }
 });
 
+function addUnit(value, unit, alternative) {
+  if (isNull(value)) {
+    return alternative;
+  }
+  if (isFiniteNum(value)) {
+    value = `${value | 0}${unit}`;
+  }
+  return value;
+}
+
 VElement.properties = {
 
   layout(config, { style }) {
     style.position = style.position || 'absolute';
     style.top = style.left = 0;
-    style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
-    if (isFiniteNum(config.width)) {
-      style.width = `${config.width | 0}px`;
+    let left = addUnit(config.left, 'px', '0');
+    let top = addUnit(config.top, 'px', '0');
+    let width = addUnit(config.width, 'px');
+    let height = addUnit(config.height, 'px');
+    style.transform = `translate(${left}, ${top}) ${style.transform || ''}`;
+    if (width) {
+      style.width = width;
     }
-    if (isFiniteNum(config.height)) {
-      style.height = `${config.height | 0}px`;
+    if (height) {
+      style.height = height;
     }
-    if (!config.visible) {
+    if (config.visible === false) {
       style.display = 'none';
     }
   },
