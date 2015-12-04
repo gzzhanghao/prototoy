@@ -5,6 +5,14 @@ let e = VElement.e
 describe('VElement', () => {
   let container
 
+  VElement.properties.content = (config, { prop }) => {
+    if (typeof config.text !== 'undefined') {
+      prop.innerText = config.text
+    } else if (typeof config.html !== 'undefined') {
+      prop.innerHTML = config.html
+    }
+  }
+
   beforeEach(() => {
     container = document.createElement('div')
     container.innerHTML = '<span></span>'
@@ -67,13 +75,6 @@ describe('VElement', () => {
     expect(style.width).toEqual('2px')
   })
 
-  it('can create an element with attributes', () => {
-    let virtual = createDOM(e('div', {}, { className: { list: 'hello' } }))
-    expect(container.firstChild.className).toEqual('hello')
-    virtual.update(e('div', {}, { className: { list: 'world' } }))
-    expect(container.firstChild.className).toEqual('world')
-  })
-
   it('can create an element with properties', () => {
     let virtual = createDOM(e('div', {}, { content: { text: 'hello' } }))
     expect(container.firstChild.textContent).toEqual('hello')
@@ -82,10 +83,9 @@ describe('VElement', () => {
   })
 
   it('can remove properties', () => {
-    let virtual = createDOM(e('div', {}, { className: { list: 'foo' }, content: { text: 'hello' } }))
+    let virtual = createDOM(e('div', {}, { content: { text: 'hello' } }))
     virtual.update(e('div'))
-    expect(container.firstChild.innerHTML).toEqual('')
-    expect(container.firstChild.className).toEqual('')
+    expect(container.firstChild.innerText).toEqual('')
   })
 
   it('can create element with element children', () => {

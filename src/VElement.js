@@ -395,27 +395,6 @@ VElement.properties = {
     if (config.visible === false) {
       style.display = 'none';
     }
-  },
-
-  className(config, { prop }) {
-    let list = config.list;
-    if (!isArray(list)) {
-      list = [list];
-    }
-    prop.className = list.map(v => {
-      if (typeof v === 'object' && !isNull(v)) {
-        v = Object.keys(v).filter(k => v[k]);
-      }
-      return v;
-    }).join(' ')
-  },
-
-  content(config, { prop }) {
-    if (!isNull(config.html)) {
-      prop.innerHTML = '' + config.html;
-    } else if (!isNull(config.text)) {
-      prop.innerText = '' + config.text;
-    }
   }
 };
 
