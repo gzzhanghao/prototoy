@@ -5,14 +5,6 @@ let e = VElement.e
 describe('VElement', () => {
   let container
 
-  VElement.properties.content = (config, { prop }) => {
-    if (typeof config.text !== 'undefined') {
-      prop.innerText = config.text
-    } else if (typeof config.html !== 'undefined') {
-      prop.innerHTML = config.html
-    }
-  }
-
   beforeEach(() => {
     container = document.createElement('div')
     container.innerHTML = '<span></span>'
@@ -76,14 +68,14 @@ describe('VElement', () => {
   })
 
   it('can create an element with properties', () => {
-    let virtual = createDOM(e('div', {}, { content: { text: 'hello' } }))
+    let virtual = createDOM(e('div', {}, { prop: { innerText: 'hello' } }))
     expect(container.firstChild.textContent).toEqual('hello')
-    virtual.update(e('div', {}, { content: { html: '<b>world</b>' } }))
+    virtual.update(e('div', {}, { prop: { innerHTML: '<b>world</b>' } }))
     expect(container.firstChild.innerHTML).toEqual('<b>world</b>')
   })
 
   it('can remove properties', () => {
-    let virtual = createDOM(e('div', {}, { content: { text: 'hello' } }))
+    let virtual = createDOM(e('div', {}, { prop: { innerText: 'hello' } }))
     virtual.update(e('div'))
     expect(container.firstChild.innerText).toEqual('')
   })
@@ -133,7 +125,7 @@ describe('VElement', () => {
 
   it('can get layout of the element', () => {
     createDOM(
-      e('div', { top: 1, width: $ => $.top() + 1 }, $ => ({ content: { text: $.top() } }))
+      e('div', { top: 1, width: $ => $.top() + 1 }, $ => ({ prop: { innerText: $.top() } }))
     )
     expect(container.firstChild.innerText).toEqual('1')
     expect(container.firstChild.style.width).toEqual('2px')
@@ -163,7 +155,7 @@ describe('VElement', () => {
     let visible = false
     let virtual = createDOM(
       e('div', { visible: () => visible }, {}, [
-        e('div', {}, $ => ({ content: { text: $.visible() } }))
+        e('div', {}, $ => ({ prop: { innerText: $.visible() } }))
       ])
     )
     expect(container.firstChild.firstChild.innerText).toEqual('false')
@@ -177,7 +169,7 @@ describe('VElement', () => {
     it('can change automatically with visibility', () => {
       createDOM(
         e('div', { visible: false }, {}, [
-          e('div', { top: 1 }, $ => ({ content: { text: $.top() }}))
+          e('div', { top: 1 }, $ => ({ prop: { innerText: $.top() }}))
         ])
       )
       expect(container.firstChild.firstChild.innerText).toEqual('0')
@@ -186,8 +178,8 @@ describe('VElement', () => {
     it('can get from BCR when not set', () => {
       createDOM(
         e('div', {}, {}, [
-          e('div', {}, { content: { text: 'foo' } }),
-          e('div', {}, $ => ({ content: { text: $.prev.height() }}))
+          e('div', {}, { prop: { innerText: 'foo' } }),
+          e('div', {}, $ => ({ prop: { innerText: $.prev.height() }}))
         ])
       )
       expect(container.firstChild.lastChild.innerText).toBeGreaterThan(0)
@@ -197,8 +189,8 @@ describe('VElement', () => {
       let content = ''
       let virtual = createDOM(
         e('div', {}, {}, [
-          e('div', {}, $ => ({ content: { text: content } })),
-          e('div', {}, $ => ({ content: { text: $.prev.height() }}))
+          e('div', {}, $ => ({ prop: { innerText: content } })),
+          e('div', {}, $ => ({ prop: { innerText: $.prev.height() }}))
         ])
       )
       expect(container.firstChild.lastChild.innerText).toEqual('0')

@@ -381,6 +381,18 @@ VElement.properties = {
     if (config.visible === false) {
       style.display = 'none';
     }
+  },
+
+  attr(config, { attr }) {
+    assign(attr, config);
+  },
+
+  prop(config, { prop }) {
+    assign(prop, config);
+  },
+
+  style(config, { style }) {
+    assign(style, config);
   }
 };
 
