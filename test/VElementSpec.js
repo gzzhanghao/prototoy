@@ -20,23 +20,23 @@ describe('VElement', () => {
   }
 
   it('can append to an element', () => {
-    new VElement(e('div', {}, {})).appendTo(container)
+    new VElement(e('div')).appendTo(container)
     expect(container.lastChild).toEqual(jasmine.any(HTMLDivElement))
   })
 
   it('can insert before an element', () => {
-    new VElement(e('div', {}, {})).insertBefore(container.firstChild)
+    new VElement(e('div')).insertBefore(container.firstChild)
     expect(container.firstChild).toEqual(jasmine.any(HTMLDivElement))
   })
 
   it('can replace an element', () => {
-    new VElement(e('div', {}, {})).replace(container.firstChild)
+    new VElement(e('div')).replace(container.firstChild)
     expect(container.firstChild).toEqual(jasmine.any(HTMLDivElement))
     expect(container.children.length).toEqual(1)
   })
 
   it('can create an element with namespace', () => {
-    createDOM(e('svg', {}, {}, null, null, 'http://www.w3.org/2000/svg'))
+    createDOM(e('svg', null, 'http://www.w3.org/2000/svg'))
     expect(container.firstChild).toEqual(jasmine.any(SVGElement))
     expect(container.firstChild.namespaceURI).toEqual('http://www.w3.org/2000/svg')
   })
@@ -68,31 +68,31 @@ describe('VElement', () => {
   })
 
   it('can create an element with properties', () => {
-    let virtual = createDOM(e('div', {}, { prop: { innerText: 'hello' } }))
+    let virtual = createDOM(e('div', $ => ({ prop: { innerText: 'hello' } })))
     expect(container.firstChild.textContent).toEqual('hello')
-    virtual.update(e('div', {}, { prop: { innerHTML: '<b>world</b>' } }))
+    virtual.update(e('div', $ => ({ prop: { innerHTML: '<b>world</b>' } })))
     expect(container.firstChild.innerHTML).toEqual('<b>world</b>')
   })
 
   it('can remove properties', () => {
-    let virtual = createDOM(e('div', {}, { prop: { innerText: 'hello' } }))
+    let virtual = createDOM(e('div', { prop: { innerText: 'hello' } }))
     virtual.update(e('div'))
     expect(container.firstChild.innerText).toEqual('')
   })
 
   it('can create element with element children', () => {
     let virtual = createDOM(
-      e('div', {}, {}, [e('span')])
+      e('div', [e('span')])
     )
     expect(container.firstChild.children.length).toEqual(1)
     expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
   })
 
   it('can create element with dynamic children', () => {
-    let virtual = createDOM(e('div', {}, {}, [[]]))
+    let virtual = createDOM(e('div', [[]]))
     expect(container.firstChild.children.length).toEqual(0)
     virtual.update(
-      e('div', {}, {}, [
+      e('div', [
         [e('span')]
       ])
     )
@@ -103,7 +103,7 @@ describe('VElement', () => {
   it('can create element with children from functions', () => {
     let elements = []
     let virtual = createDOM(
-      e('div', {}, {}, [
+      e('div', [
         () => elements.map(element => e('span'))
       ])
     )
@@ -116,9 +116,9 @@ describe('VElement', () => {
   })
 
   it('can update children with update', () => {
-    let virtual = createDOM(e('div', {}, {}, [[]]))
+    let virtual = createDOM(e('div', [[]]))
     expect(container.firstChild.children.length).toEqual(0)
-    virtual.update(e('div', {}, {}, [[e('span')]]))
+    virtual.update(e('div', [[e('span')]]))
     expect(container.firstChild.children.length).toEqual(1)
     expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
   })
@@ -133,7 +133,7 @@ describe('VElement', () => {
 
   it('can get layout of children', () => {
     createDOM(
-      e('div', { top: 1, width: 2, height: $ => $.children[0].bottom() + 1 }, {}, [
+      e('div', { top: 1, width: 2, height: $ => $.children[0].bottom() + 1 }, [
         e('span', { top: 1, height: 1 })
       ])
     )
@@ -142,7 +142,7 @@ describe('VElement', () => {
 
   it('can get layout of siblings', () => {
     createDOM(
-      e('div', {}, {}, [
+      e('div', [
         e('span', { top: 1, height: $ => $.next.bottom() + 1 }),
         e('span', { top: $ => $.prev.top() + 1, height: 1 })
       ])
@@ -154,8 +154,8 @@ describe('VElement', () => {
   it('can get visibility of element', () => {
     let visible = false
     let virtual = createDOM(
-      e('div', { visible: () => visible }, {}, [
-        e('div', {}, $ => ({ prop: { innerText: $.visible() } }))
+      e('div', { visible: () => visible }, [
+        e('div', $ => ({ prop: { innerText: $.visible() } }))
       ])
     )
     expect(container.firstChild.firstChild.innerText).toEqual('false')
@@ -168,7 +168,7 @@ describe('VElement', () => {
 
     it('can change automatically with visibility', () => {
       createDOM(
-        e('div', { visible: false }, {}, [
+        e('div', { visible: false }, [
           e('div', { top: 1 }, $ => ({ prop: { innerText: $.top() }}))
         ])
       )
@@ -177,9 +177,9 @@ describe('VElement', () => {
 
     it('can get from BCR when not set', () => {
       createDOM(
-        e('div', {}, {}, [
-          e('div', {}, { prop: { innerText: 'foo' } }),
-          e('div', {}, $ => ({ prop: { innerText: $.prev.height() }}))
+        e('div', [
+          e('div', $ => ({ prop: { innerText: 'foo' } })),
+          e('div', $ => ({ prop: { innerText: $.prev.height() }}))
         ])
       )
       expect(container.firstChild.lastChild.innerText).toBeGreaterThan(0)
@@ -188,9 +188,9 @@ describe('VElement', () => {
     it('can get BCR right after update', () => {
       let content = ''
       let virtual = createDOM(
-        e('div', {}, {}, [
-          e('div', {}, $ => ({ prop: { innerText: content } })),
-          e('div', {}, $ => ({ prop: { innerText: $.prev.height() }}))
+        e('div', [
+          e('div', $ => ({ prop: { innerText: content } })),
+          e('div', $ => ({ prop: { innerText: $.prev.height() }}))
         ])
       )
       expect(container.firstChild.lastChild.innerText).toEqual('0')
