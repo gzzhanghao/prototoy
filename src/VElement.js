@@ -399,13 +399,32 @@ VElement.properties = {
 VElement.strProps = ['className', 'innerHTML', 'innerText'];
 VElement.extProps = [];
 
-VElement.e = function(name, layout, props, children, key, namespace) {
-  return {
-    name, key, namespace,
-    layout: layout || {},
-    props: props || {},
-    children: children || []
-  };
+VElement.e = function(name) {
+
+  let layout = {};
+  let props = $ => ({});
+  let children = [];
+  let key = '';
+  let namespace = '';
+
+  let keySet = false;
+  
+  [].slice.call(arguments, 1).forEach(arg => {
+    if (arg instanceof Function) {
+      props = arg;
+    } else if (arg instanceof Array) {
+      children = arg;
+    } else if (arg instanceof Object) {
+      layout = arg;
+    } else if (!keySet) {
+      keySet = true;
+      key = arg;
+    } else {
+      namespace = arg;
+    }
+  });
+
+  return { name, key, namespace, layout, props, children };
 };
 
 export default VElement;
