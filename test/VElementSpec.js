@@ -5,6 +5,12 @@ let e = VElement.e
 describe('VElement', () => {
   let container
 
+  VElement.properties.classList = (config, { element }) => {
+    config.forEach(className => {
+      element.classList.add(config)
+    })
+  }
+
   beforeEach(() => {
     container = document.createElement('div')
     container.innerHTML = '<span></span>'
@@ -79,6 +85,22 @@ describe('VElement', () => {
     expect(container.firstChild.style.backgroundColor).toEqual('red')
     virtual.update(e('div'))
     expect(container.firstChild.style.backgroundColor).toEqual('')
+  })
+
+  it('can access the real element', () => {
+    createDOM(e('div', $ => ({ classList: ['class'] })))
+    expect(container.firstChild.className).toEqual('class')
+  })
+
+  it('can create an element with custom data', () => {
+    let virtual = createDOM(e('div', { data: { foo: 'bar' } }, [
+      e('span', $ => ({ prop: { innerText: $.parent.data('foo') } }))
+    ]))
+    expect(container.firstChild.firstChild.innerText).toEqual('bar')
+    virtual.update(e('div', { data: 'foo' }, [
+      e('span', $ => ({ prop: { innerText: $.parent.data() } }))
+    ]))
+    expect(container.firstChild.firstChild.innerText).toEqual('foo')
   })
 
   it('can remove properties', () => {

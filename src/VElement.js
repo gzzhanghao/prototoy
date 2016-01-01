@@ -103,6 +103,19 @@ assign(VElement.prototype, {
     return this;
   },
 
+  data(key) {
+    let nextState = this.nextState.layout;
+    let value = nextState.data;
+    if (isNull(value)) {
+      nextState.data = {};
+      value = this.calc(this.opts.layout.data || {});
+    }
+    if (isNull(key)) {
+      return value;
+    }
+    return value[key];
+  },
+
   visible() {
     let nextState = this.nextState.layout;
     let value = nextState.visible;
@@ -132,7 +145,7 @@ assign(VElement.prototype, {
       let node = nodes[i];
 
       node.status = STATUS_PENDING;
-      node.nextState = { attr: {}, style: {}, prop: {}, layout: {} };
+      node.nextState = { attr: {}, style: {}, prop: {}, layout: {}, element: node.element };
 
       let state = node.state.children;
       let opts = node.opts.children;
