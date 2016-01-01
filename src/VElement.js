@@ -249,7 +249,13 @@ assign(VElement.prototype, {
       let value = self.calc(self.opts.props);
       let keys = Object.keys(value);
       for (let j = keys.length - 1; j >= 0; j--) {
-        VElement.properties[keys[j]](value[keys[j]], nextState);
+        let key = keys[j];
+        let handler = VElement.properties[key];
+        if (handler) {
+          handler(value[key], nextState);
+        } else {
+          nextState.style[key] = value[key];
+        }
       }
       VElement.properties.layout({
         top: self.top(), left: self.left(),

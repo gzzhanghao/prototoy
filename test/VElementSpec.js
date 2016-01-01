@@ -74,6 +74,13 @@ describe('VElement', () => {
     expect(container.firstChild.innerHTML).toEqual('<b>world</b>')
   })
 
+  it('can create an element with style', () => {
+    let virtual = createDOM(e('div', $ => ({ backgroundColor: 'red' })))
+    expect(container.firstChild.style.backgroundColor).toEqual('red')
+    virtual.update(e('div'))
+    expect(container.firstChild.style.backgroundColor).toEqual('')
+  })
+
   it('can remove properties', () => {
     let virtual = createDOM(e('div', { prop: { innerText: 'hello' } }))
     virtual.update(e('div'))
