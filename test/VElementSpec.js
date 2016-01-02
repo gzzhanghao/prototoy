@@ -1,6 +1,4 @@
-import VElement from '../src/VElement'
-
-let e = VElement.e
+import { VElement, e } from '../src/VElement'
 
 describe('VElement', () => {
   let container

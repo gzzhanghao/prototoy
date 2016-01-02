@@ -432,7 +432,7 @@ VElement.properties = {
 VElement.strProps = ['className', 'innerHTML', 'innerText'];
 VElement.extProps = [];
 
-VElement.e = function(name) {
+function e(name) {
 
   let layout = {};
   let props = $ => ({});
@@ -461,4 +461,4 @@ VElement.e = function(name) {
   return { name, key, namespace, layout, props, children };
 };
 
-export default VElement;
+export { VElement, e };

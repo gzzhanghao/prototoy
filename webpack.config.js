@@ -6,7 +6,8 @@ module.exports = {
     path: 'dist',
     filename: 'VElement.min.js',
     publicPath: '/dist/',
-    library: 'VElement'
+    library: 'VElement',
+    libraryTarget: 'umd'
   },
   module: {
     loaders: [{
