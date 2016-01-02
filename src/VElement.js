@@ -109,7 +109,7 @@ assign(VElement.prototype, {
     let value = nextState.data;
     if (isNull(value)) {
       nextState.data = {};
-      value = this.calc(this.opts.layout.data || {});
+      value = nextState.data = this.calc(this.opts.layout.data || {});
     }
     if (isNull(key)) {
       return value;
