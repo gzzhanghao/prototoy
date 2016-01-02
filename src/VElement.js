@@ -1,6 +1,6 @@
 import util from './util';
 
-let {assign, isNull, isFunction, isArray, isFiniteNum} = util;
+let {assign, isNull, isObject, isFunction, isArray, isFiniteNum} = util;
 
 const STATUS_PENDING = 0;
 const STATUS_RUNNING = 1;
@@ -25,7 +25,7 @@ function VElement(opts) {
   let children = opts.children;
 
   self.state.children = children.map(child => {
-    if (isArray(child) || isFunction(child)) {
+    if (isArray(child) || isFunction(child) || !isObject(child)) {
       child = { element: document.createComment('list'), elements: [] };
     } else {
       child = new VElement(child);
@@ -152,8 +152,14 @@ assign(VElement.prototype, {
       let children = [];
 
       for (let j = opts.length - 1; j >= 0; j--) {
-        if (!isArray(opts[j]) && !isFunction(opts[j])) {
-          state[j].opts = opts[j];
+        let child = opts[j];
+
+        if (!isObject(child) && !isFunction(child)) {
+          child = [];
+        }
+
+        if (!isArray(child) && !isFunction(child)) {
+          state[j].opts = child;
           children.unshift(state[j]);
           continue;
         }
@@ -162,7 +168,6 @@ assign(VElement.prototype, {
         let elements = state[j].elements;
         let parent = node.element;
         let keys = elements.map(child => child.opts.key);
-        let child = opts[j];
 
         if (isFunction(child)) {
           child = child();

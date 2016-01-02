@@ -118,14 +118,14 @@ describe('VElement', () => {
   })
 
   it('can create element with dynamic children', () => {
-    let virtual = createDOM(e('div', [[]]))
-    expect(container.firstChild.children.length).toEqual(0)
+    let virtual = createDOM(e('div', [false]))
+    expect(container.firstChild.childNodes.length).toEqual(1)
     virtual.update(
       e('div', [
         [e('span')]
       ])
     )
-    expect(container.firstChild.children.length).toEqual(1)
+    expect(container.firstChild.childNodes.length).toEqual(2)
     expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
   })
 
@@ -136,10 +136,10 @@ describe('VElement', () => {
         () => elements.map(element => e('span'))
       ])
     )
-    expect(container.firstChild.children.length).toEqual(0)
+    expect(container.firstChild.childNodes.length).toEqual(1)
     elements = [1, 2]
     virtual.update()
-    expect(container.firstChild.children.length).toEqual(2)
+    expect(container.firstChild.childNodes.length).toEqual(3)
     expect(container.firstChild.children[0]).toEqual(jasmine.any(HTMLSpanElement))
     expect(container.firstChild.children[1]).toEqual(jasmine.any(HTMLSpanElement))
   })

@@ -12,6 +12,10 @@ export default {
     return value instanceof Array;
   },
 
+  isObject(value) {
+    return typeof value === 'object' && value !== null;
+  },
+
   isFiniteNum(value) {
     return isFinite(value) && !isNaN(parseFloat(value));
   },
