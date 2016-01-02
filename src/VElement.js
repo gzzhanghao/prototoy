@@ -270,9 +270,14 @@ assign(VElement.prototype, {
       for (let j = keys.length - 1; j >= 0; j--) {
         let key = keys[j];
         let handler = VElement.properties[key];
-        let data = self.propData[key] = self.propData[key] || {};
         if (handler) {
-          handler(value[key], assign({}, nextState, { data, element: self.element }));
+          handler(value[key], {
+            style: nextState.style,
+            attr: nextState.attr,
+            prop: nextState.prop,
+            data: self.propData[key] = self.propData[key] || {},
+            element: self.element
+          });
         } else {
           nextState.style[key] = value[key];
         }
@@ -353,24 +358,26 @@ assign(VElement.prototype, {
   },
 
   applyStyle() {
-    if (this.status !== STATUS_READY) {
+    let self = this;
+
+    if (self.status !== STATUS_READY) {
       return;
     }
 
-    let state = this.state.style;
-    let nextState = this.nextState.style;
-    let style = this.style;
+    let state = self.state.style;
+    let nextState = self.nextState.style;
+    let style = self.style;
 
     let oriKeys = Object.keys(state);
     let keys = Object.keys(nextState);
 
-    this.status = STATUS_FINISH;
-    this.state.style = this.nextState.style;
+    self.status = STATUS_FINISH;
+    self.state.style = self.nextState.style;
 
     for (let j = oriKeys.length - 1; j >= 0; j--) {
       if (keys.indexOf(oriKeys[j]) < 0) {
         style[oriKeys[j]] = '';
-        this.bcr = null;
+        self.bcr = null;
       }
     }
 
@@ -379,7 +386,7 @@ assign(VElement.prototype, {
       nextState[key] = nextState[key] + ''
       if (state[key] !== nextState[key]) {
         style[key] = nextState[key];
-        this.bcr = null;
+        self.bcr = null;
       }
     }
   },
@@ -435,7 +442,7 @@ VElement.e = function(name) {
 
   let keySet = false;
 
-  for (let i = arguments.length - 1; i >= 0; i--) {
+  for (let i = 0, ii = arguments.length; i < ii; i++) {
     let arg = arguments[i];
     if (arg instanceof Function) {
       props = arg;
