@@ -5,9 +5,13 @@ let e = VElement.e
 describe('VElement', () => {
   let container
 
-  VElement.properties.classList = (config, { element }) => {
+  VElement.properties.classList = (config, { element, data }) => {
+    let classList = data.classList = data.classList || []
     config.forEach(className => {
-      element.classList.add(config)
+      if (classList.indexOf(className) < 0) {
+        element.classList.add(config)
+        classList.push(className)
+      }
     })
   }
 
@@ -87,7 +91,7 @@ describe('VElement', () => {
     expect(container.firstChild.style.backgroundColor).toEqual('')
   })
 
-  it('can access the real element', () => {
+  it('can access the real element and custom data for properties', () => {
     createDOM(e('div', $ => ({ classList: ['class'] })))
     expect(container.firstChild.className).toEqual('class')
   })

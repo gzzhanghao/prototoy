@@ -14,6 +14,7 @@ function VElement(opts) {
 
   self.opts = opts;
   self.state = { attr: {}, style: {}, prop: {}, children: [] };
+  self.propData = {};
 
   if (opts.namespace) {
     self.element = document.createElementNS(opts.namespace, opts.name);
@@ -145,7 +146,7 @@ assign(VElement.prototype, {
       let node = nodes[i];
 
       node.status = STATUS_PENDING;
-      node.nextState = { attr: {}, style: {}, prop: {}, layout: {}, element: node.element };
+      node.nextState = { attr: {}, style: {}, prop: {}, layout: {} };
 
       let state = node.state.children;
       let opts = node.opts.children;
@@ -269,8 +270,9 @@ assign(VElement.prototype, {
       for (let j = keys.length - 1; j >= 0; j--) {
         let key = keys[j];
         let handler = VElement.properties[key];
+        let data = self.propData[key] = self.propData[key] || {};
         if (handler) {
-          handler(value[key], nextState);
+          handler(value[key], assign({}, nextState, { data, element: self.element }));
         } else {
           nextState.style[key] = value[key];
         }
