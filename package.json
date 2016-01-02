@@ -1,6 +1,6 @@
 {
   "name": "velement",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A simple virtual dom implementation for rapid prototyping",
   "main": "src/VElement.js",
   "scripts": {
