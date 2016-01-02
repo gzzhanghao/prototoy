@@ -403,6 +403,7 @@ VElement.properties = {
 
   layout(config, { style }) {
     style.position = style.position || 'absolute';
+    style.boxSizing = style.boxSizing || 'border-box';
     style.top = style.left = 0;
     style.transform = `translate(${config.left | 0}px, ${config.top | 0}px) ${style.transform || ''}`;
     if (isFiniteNum(config.width)) {
