@@ -434,8 +434,9 @@ VElement.e = function(name) {
   let namespace = '';
 
   let keySet = false;
-  
-  [].slice.call(arguments, 1).forEach(arg => {
+
+  for (let i = arguments.length - 1; i >= 0; i--) {
+    let arg = arguments[i];
     if (arg instanceof Function) {
       props = arg;
     } else if (arg instanceof Array) {
@@ -448,7 +449,7 @@ VElement.e = function(name) {
     } else {
       namespace = arg;
     }
-  });
+  }
 
   return { name, key, namespace, layout, props, children };
 };
